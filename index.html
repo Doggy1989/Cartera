@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E4D2E">
+<meta name="robots" content="noindex, nofollow">
+<title>Cartera</title>
+<style>
+:root{--v:#1E7B4A;--vo:#0E4D2E;--vm:#E3F2E8;--bg:#F4F8F5;--tx:#14231B;--tx2:#5A6B61;--bd:#D7E3DA;--rojo:#B3261E;--rojob:#FCE8E6;--amb:#8A5A00;--ambb:#FFF1D6;--w:#fff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.45}
+#app{max-width:480px;margin:0 auto;min-height:100dvh;padding-bottom:88px}
+.splash{padding:40vh 24px 0;text-align:center;color:var(--tx2)}
+.top{background:var(--vo);color:#fff;padding:14px 18px 16px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+.top small{display:block;font-size:13px;opacity:.8}
+.top strong{font-size:28px;font-weight:600;letter-spacing:-.5px}
+.top .who{font-size:14px;opacity:.9;text-align:right}
+.sub{background:var(--vo);color:#fff;padding:12px 10px;display:flex;align-items:center;gap:6px}
+.sub h1{font-size:18px;font-weight:600;margin:0}
+.sub button{background:none;border:0;color:#fff;padding:6px;display:flex}
+.pad{padding:16px}
+h2{font-size:17px;font-weight:600;margin:20px 0 10px}
+.card{background:var(--w);border:1px solid var(--bd);border-radius:14px;padding:14px 16px;margin-bottom:12px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
+.kpi{background:var(--vm);border-radius:12px;padding:10px 14px}
+.kpi small{display:block;color:var(--tx2);font-size:13px}
+.kpi b{font-size:20px;font-weight:600}
+.kpi.red{background:var(--rojob)}.kpi.red b{color:var(--rojo)}
+.row{width:100%;display:flex;align-items:center;gap:12px;background:var(--w);border:1px solid var(--bd);border-radius:14px;padding:12px 14px;margin-bottom:8px;text-align:left;font:inherit;color:inherit}
+.row.mora{background:var(--rojob);border-color:#F2B8B5}
+.av{width:42px;height:42px;border-radius:50%;background:var(--vm);color:var(--vo);display:flex;align-items:center;justify-content:center;font-weight:600;flex:none}
+.mora .av{background:#F7C9C6;color:var(--rojo)}
+.info{flex:1;min-width:0;display:flex;flex-direction:column}
+.info b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.info span,.der span{font-size:13px;color:var(--tx2)}
+.der{display:flex;flex-direction:column;align-items:flex-end}
+.der b{font-weight:600}
+.mora .der span{color:var(--rojo);font-weight:600}
+.badge{display:inline-block;font-size:12px;padding:3px 10px;border-radius:8px;background:var(--vm);color:var(--vo);font-weight:600}
+.badge.red{background:var(--rojob);color:var(--rojo)}.badge.amb{background:var(--ambb);color:var(--amb)}
+label{display:block;font-size:14px;color:var(--tx2);margin:14px 2px 6px}
+input,textarea,select{width:100%;font:inherit;color:inherit;background:var(--w);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;min-height:48px}
+textarea{resize:vertical;min-height:84px}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--v);outline-offset:1px}
+.btn{width:100%;min-height:50px;border-radius:12px;border:0;background:var(--v);color:#fff;font:inherit;font-weight:600;margin-top:16px;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;cursor:pointer}
+.btn.sec{background:var(--w);color:var(--vo);border:1px solid var(--v)}
+.btn.red{background:var(--rojo)}
+.btn.min{min-height:42px;margin-top:8px;font-size:15px}
+.btn:disabled{opacity:.6}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{background:var(--w);border:2px solid var(--bd);border-radius:14px;padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;font:inherit;color:inherit}
+.opt b{font-weight:600}.opt span{font-size:12px;color:var(--tx2)}
+.opt.sel{border-color:var(--v);background:var(--vm)}
+.box{background:var(--vm);border-radius:12px;padding:12px 14px;margin-top:12px;font-size:15px}
+.box.red{background:var(--rojob)}
+.kv{display:flex;justify-content:space-between;padding:5px 0;font-size:15px}
+.kv span:first-child{color:var(--tx2)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--bd);background:var(--w);border-radius:20px;padding:8px 14px;font:inherit;color:inherit}
+.chip.sel{background:var(--v);border-color:var(--v);color:#fff}
+.tabs{display:flex;gap:6px;background:var(--vm);border-radius:12px;padding:4px;margin-bottom:12px}
+.tabs button{flex:1;border:0;background:none;border-radius:9px;padding:9px 4px;font:inherit;color:var(--vo)}
+.tabs button.on{background:var(--w);font-weight:600}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--w);border-top:1px solid var(--bd);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom)}
+.bar-in{max-width:480px;width:100%;display:flex}
+.bar button{flex:1;background:none;border:0;padding:9px 2px 8px;display:flex;flex-direction:column;align-items:center;gap:2px;font:inherit;font-size:12px;color:var(--tx2)}
+.bar button.on{color:var(--v);font-weight:600}
+.oculto{display:none}
+.err{color:var(--rojo);font-size:14px;margin:10px 2px 0}
+.vacio{text-align:center;color:var(--tx2);padding:28px 12px}
+.login{padding:56px 22px 24px}
+.login .logo{width:64px;height:64px;border-radius:18px;background:var(--v);color:#fff;display:flex;align-items:center;justify-content:center;margin-bottom:18px}
+.login h1{font-size:28px;margin:0 0 4px;letter-spacing:-.5px}
+.login p{color:var(--tx2);margin:0 0 8px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;background:var(--tx);color:#fff;padding:12px 18px;border-radius:12px;font-size:15px;max-width:90%;z-index:9}
+.toast.err{background:var(--rojo)}
+.small{font-size:13px;color:var(--tx2)}
+a{color:var(--v)}
+@media (prefers-reduced-motion:no-preference){.opt,.row,.btn{transition:background .15s,border-color .15s}}
+</style>
+</head>
+<body>
+<div id="app"><div class="splash">Cargando…</div></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit, writeBatch, Timestamp, getAggregateFromServer, sum } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCskEGbFtpuMG0DuIOaEsM_qgq8fd-EZVg",
+  authDomain: "cartera-ad10b.firebaseapp.com",
+  projectId: "cartera-ad10b",
+  storageBucket: "cartera-ad10b.firebasestorage.app",
+  messagingSenderId: "184863365758",
+  appId: "1:184863365758:web:02041085f808f5c903562f"
+};
+const ADMIN_EMAIL = "gutiandres3524@gmail.com";
+const DOMINIO = "@cartera-ad10b.app";
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const S = { user:null, rol:null, cid:null, nombre:'', caja:0, prestamos:[], cobradores:[], view:'login', params:{}, loginError:'', loginUser:'' };
+
+const I = {
+  home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+  plus:'<circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>',
+  wallet:'<path d="M3 7h18v12H3z"/><path d="M3 7l3-4h12l3 4"/><circle cx="16" cy="13" r="1.5"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',
+  users:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M16 4.5a3.5 3.5 0 010 7M18 14.5c2.5.5 4 2 4 5"/>',
+  down:'<path d="M12 3v12M7 11l5 5 5-5"/><path d="M4 20h16"/>',
+  out:'<path d="M9 4H5v16h4"/><path d="M16 8l4 4-4 4M20 12H9"/>',
+  chat:'<path d="M4 20l1.5-4.5A8 8 0 1112 20a8 8 0 01-3.5-.8z"/>',
+  check:'<path d="M5 12l5 5 9-10"/>',
+  renew:'<path d="M20 11a8 8 0 00-14-4L4 9"/><path d="M4 4v5h5"/><path d="M4 13a8 8 0 0014 4l2-2"/><path d="M20 20v-5h-5"/>',
+  back:'<path d="M15 5l-7 7 7 7"/>',
+  phone:'<path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2z"/>',
+  coin:'<circle cx="12" cy="12" r="9"/><path d="M14.5 9a3 3 0 00-5 2c0 3 5 1.5 5 4.500a3 3 0 01-5 2M12 6v1.500M12 16.500V18"/>',
+  refresh:'<path d="M20 11a8 8 0 00-14-4L4 9"/><path d="M4 4v5h5"/>'
+};
+const ic = (n, s = 22) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[n]}</svg>`;
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => '$' + Math.round(n || 0).toLocaleString('es-CO');
+const hoy0 = () => { const d = new Date(); d.setHours(0,0,0,0); return d; };
+const addDias = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); x.setHours(0,0,0,0); return x; };
+const fmtF = d => d.toLocaleDateString('es-CO', { day:'numeric', month:'short', year:'numeric' }).replace(/\./g, '');
+const fmtFH = t => t && t.toDate ? t.toDate().toLocaleString('es-CO') : '';
+const num = v => parseInt(String(v).replace(/\D/g, ''), 10) || 0;
+const tasaNum = v => parseFloat(String(v).replace(',', '.')) || 0;
+const interes = (cap, tasa) => Math.round(cap * tasa / 100);
+const diasA = d => Math.round((d - hoy0()) / 86400000);
+const ini2 = n => (n || '?').trim().split(/\s+/).slice(0, 2).map(x => x[0]).join('').toUpperCase();
+const emailDe = u => { u = u.trim().toLowerCase(); return u.includes('@') ? u : u.replace(/[^a-z0-9._-]/g, '') + DOMINIO; };
+const wa = (cel, txt) => 'https://wa.me/57' + cel + '?text=' + encodeURIComponent(txt);
+const col = (cid, n) => collection(db, 'carteras', cid, n);
+
+function toast(msg, tipo) {
+  const t = document.createElement('div');
+  t.className = 'toast' + (tipo === 'err' ? ' err' : '');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+function msgErr(e) {
+  const c = (e && e.code) || '';
+  if (c.includes('permission-denied')) return 'No tienes permiso para esta acción.';
+  if (c.includes('unavailable') || c.includes('network')) return 'Sin conexión. Revisa tu internet e intenta de nuevo.';
+  if (c.includes('email-already-in-use')) return 'Ese usuario ya existe.';
+  if (c.includes('weak-password')) return 'La clave debe tener al menos 6 caracteres.';
+  if (c.includes('wrong-password') || c.includes('invalid-credential')) return 'Clave actual incorrecta.';
+  return 'Algo salió mal: ' + ((e && e.message) || 'error desconocido');
+}
+async function run(btn, fn) {
+  if (btn) btn.disabled = true;
+  try { await fn(); } catch (e) { console.error(e); toast(msgErr(e), 'err'); }
+  finally { if (btn) btn.disabled = false; }
+}
+
+async function cargarCaja(cid) {
+  try {
+    const r = await getAggregateFromServer(col(cid, 'movimientos'), { total: sum('efecto') });
+    return r.data().total || 0;
+  } catch (e) {
+    const s = await getDocs(col(cid, 'movimientos'));
+    let t = 0; s.forEach(d => t += d.data().efecto || 0);
+    return t;
+  }
+}
+const norm = (id, d) => ({ ...d, id, vence: d.vence.toDate(), inicio: d.inicio.toDate(), pagadoEn: d.pagadoEn ? d.pagadoEn.toDate() : null });
+async function cargarActivos(cid) {
+  const s = await getDocs(query(col(cid, 'prestamos'), where('estado', '==', 'activo')));
+  return s.docs.map(d => norm(d.id, d.data())).sort((a, b) => a.vence - b.vence);
+}
+async function cargarCobrador() {
+  const [caja, pr] = await Promise.all([cargarCaja(S.cid), cargarActivos(S.cid)]);
+  S.caja = caja; S.prestamos = pr;
+}
+async function cargarAdmin() {
+  const cs = await getDocs(collection(db, 'carteras'));
+  const hoy = hoy0();
+  S.cobradores = await Promise.all(cs.docs.map(async d => {
+    const c = { id: d.id, ...d.data() };
+    const [caja, act] = await Promise.all([cargarCaja(d.id), cargarActivos(d.id)]);
+    c.caja = caja; c.activos = act.length; c.mora = act.filter(p => p.vence < hoy).length; c.calle = act.reduce((a, p) => a + p.capital, 0);
+    return c;
+  }));
+  S.cobradores.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+}
+
+function estadoP(p) {
+  const d = diasA(p.vence);
+  if (d < 0) return { mora: true, txt: 'Mora ' + (-d) + (d === -1 ? ' día' : ' días') };
+  if (d === 0) return { mora: false, txt: 'Vence hoy' };
+  if (d === 1) return { mora: false, txt: 'Vence mañana' };
+  return { mora: false, txt: 'Vence en ' + d + ' días' };
+}
+const totalP = p => p.capital + p.interes;
+
+function navHTML(items, active) {
+  return `<nav class="bar"><div class="bar-in">${items.map(([v, i, l]) => `<button data-act="ir" data-v="${v}" class="${v === active ? 'on' : ''}">${ic(i, 24)}<span>${l}</span></button>`).join('')}</div></nav>`;
+}
+const NAV_C = [['c_inicio','home','Inicio'],['c_nuevo','plus','Nuevo'],['c_gastos','wallet','Gastos'],['c_hist','clock','Historial'],['c_perfil','user','Perfil']];
+const NAV_A = [['a_resumen','users','Cobradores'],['a_nuevo','plus','Crear'],['a_backup','down','Respaldo'],['a_perfil','user','Perfil']];
+const cajaBar = () => `<header class="top"><div><small>Mi caja</small><strong>${money(S.caja)}</strong></div><div class="who">${esc(S.nombre)}</div></header>`;
+const subBar = (t, back) => `<header class="sub"><button data-act="ir" data-v="${back}" aria-label="Volver">${ic('back', 26)}</button><h1>${esc(t)}</h1></header>`;
+const filaP = p => { const e = estadoP(p); return `<button class="row ${e.mora ? 'mora' : ''}" data-act="abrir" data-id="${p.id}"><div class="av">${esc(ini2(p.deudorNombre))}</div><div class="info"><b>${esc(p.deudorNombre)}</b><span>Capital ${money(p.capital)}, tasa ${p.tasa}%</span></div><div class="der"><b>${money(totalP(p))}</b><span>${e.txt}</span></div></button>`; };
+const kv = (a, b) => `<div class="kv"><span>${a}</span><span>${b}</span></div>`;
+
+const V = {
+  login() {
+    return `<div class="login"><div class="logo">${ic('coin', 34)}</div><h1>Cartera</h1><p>Entra con tu usuario y tu clave.</p>
+    <form data-form="login" autocomplete="off">
+      <label for="usuario">Usuario</label><input id="usuario" name="usuario" autocapitalize="none" autocomplete="username" value="${esc(S.loginUser)}">
+      <label for="pin">Clave</label><input id="pin" name="pin" type="password" autocomplete="current-password" inputmode="text">
+      <div class="err">${esc(S.loginError)}</div>
+      <button class="btn" type="submit">Entrar</button>
+    </form>
+    <p class="small" style="margin-top:18px">El administrador te asigna el usuario y la clave.</p></div>`;
+  },
+  c_inicio() {
+    const mora = S.prestamos.filter(p => p.vence < hoy0()).length;
+    const lista = S.prestamos.length ? S.prestamos.map(filaP).join('') : `<div class="vacio">Aún no tienes préstamos activos.<br>Crea el primero en Nuevo.</div>`;
+    return cajaBar() + `<main class="pad"><div class="kpis"><div class="kpi"><small>Deudores activos</small><b>${S.prestamos.length}</b></div><div class="kpi ${mora ? 'red' : ''}"><small>En mora</small><b>${mora}</b></div></div>
+    <h2>Próximos a cobrar</h2>${lista}
+    <button class="btn sec min" data-act="refrescar">${ic('refresh', 18)} Actualizar</button></main>` + navHTML(NAV_C, 'c_inicio');
+  },
+  c_nuevo() {
+    return cajaBar() + `<main class="pad"><h2 style="margin-top:4px">Nuevo préstamo</h2>
+    <form data-form="nuevo" data-live="nuevo" autocomplete="off">
+      <label for="nombre">Nombre del deudor</label><input id="nombre" name="nombre" autocomplete="off">
+      <label for="celular">Celular (10 números)</label><input id="celular" name="celular" inputmode="numeric" maxlength="10" placeholder="3001234567">
+      <label for="monto">Monto prestado</label><input id="monto" name="monto" inputmode="numeric" placeholder="500000">
+      <div class="two"><div><label for="tasa">Tasa de interés (%)</label><input id="tasa" name="tasa" inputmode="decimal" placeholder="20"></div>
+      <div><label for="plazo">Plazo (días)</label><input id="plazo" name="plazo" inputmode="numeric" value="24"></div></div>
+      <label for="obs">Observaciones (opcional)</label><textarea id="obs" name="obs" placeholder="Anotaciones sobre el deudor"></textarea>
+      <div class="box" id="prev">Escribe el monto para ver el resumen.</div>
+      <button class="btn" type="submit">Crear préstamo</button>
+    </form></main>` + navHTML(NAV_C, 'c_nuevo');
+  },
+  c_ok() {
+    const p = S.params.p;
+    const txt = `Hola ${p.deudorNombre}, te confirmo tu préstamo de ${money(p.capital)} con interés de ${money(p.interes)} (${p.tasa}%). Total a pagar: ${money(totalP(p))} el ${fmtF(p.vence)}. Gracias.`;
+    return subBar('Préstamo creado', 'c_inicio') + `<main class="pad"><div class="card"><div class="av" style="margin-bottom:8px">${ic('check', 24)}</div><b>${esc(p.deudorNombre)}</b>
+    ${kv('Entregado', money(p.capital))}${kv('Interés', money(p.interes))}${kv('Total a cobrar', money(totalP(p)))}${kv('Vence', fmtF(p.vence))}</div>
+    <a class="btn" href="${wa(p.celular, txt)}" target="_blank" rel="noopener">${ic('chat', 20)} Enviar mensaje por WhatsApp</a>
+    <button class="btn sec" data-act="ir" data-v="c_inicio">Volver al inicio</button></main>` + navHTML(NAV_C, 'c_inicio');
+  },
+  c_det() {
+    const p = S.prestamos.find(x => x.id === S.params.id);
+    if (!p) return subBar('Préstamo', 'c_inicio') + '<main class="pad"><div class="vacio">No se encontró el préstamo.</div></main>';
+    const e = estadoP(p);
+    const msg = e.mora
+      ? `Hola ${p.deudorNombre}, tu pago de ${money(totalP(p))} está vencido hace ${-diasA(p.vence)} días. Por favor ponte al día. Gracias.`
+      : `Hola ${p.deudorNombre}, te recuerdo que tu pago de ${money(totalP(p))} vence el ${fmtF(p.vence)}. Gracias.`;
+    const movs = S.params.movs;
+    const hist = movs === null || movs === undefined ? '<div class="small">Cargando…</div>' : movs.length ? movs.map(m => `<div class="card" style="padding:10px 14px"><div class="kv"><span>${esc(m.tipo === 'prestamo' ? 'Préstamo entregado' : m.tipo === 'pago_total' ? 'Pago total' : 'Renovación')}</span><span>${money(m.monto)}</span></div><div class="small">${esc(fmtFH(m.fecha))}${m.nota ? ' - ' + esc(m.nota) : ''}</div></div>`).join('') : '<div class="small">Sin movimientos.</div>';
+    return subBar(p.deudorNombre, 'c_inicio') + `<main class="pad"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><b>${esc(p.deudorNombre)}</b><span class="badge ${e.mora ? 'red' : ''}">${e.txt}</span></div>
+    <div class="small" style="margin-bottom:6px">${esc(p.celular)}</div>
+    ${kv('Capital', money(p.capital))}${kv('Interés (' + p.tasa + '%)', money(p.interes))}${kv('Total a cobrar', '<b>' + money(totalP(p)) + '</b>')}${kv('Plazo', p.plazo + ' días')}${kv('Vence', fmtF(p.vence))}${kv('Ciclos', p.ciclos || 1)}</div>
+    <button class="btn" data-act="pagar" data-id="${p.id}">${ic('check', 20)} Registrar pago</button>
+    <a class="btn sec" href="${wa(p.celular, msg)}" target="_blank" rel="noopener">${ic('chat', 20)} Recordar por WhatsApp</a>
+    <a class="btn sec" href="tel:${esc(p.celular)}">${ic('phone', 20)} Llamar</a>
+    <form data-form="obs" data-id="${p.id}"><label for="obs2">Observaciones</label><textarea id="obs2" name="obs">${esc(p.observaciones || '')}</textarea><button class="btn sec min" type="submit">Guardar observaciones</button></form>
+    <h2>Movimientos de este préstamo</h2>${hist}</main>` + navHTML(NAV_C, 'c_inicio');
+  },
+  c_pago() {
+    const p = S.prestamos.find(x => x.id === S.params.id);
+    if (!p) return subBar('Registrar pago', 'c_inicio') + '<main class="pad"><div class="vacio">No se encontró el préstamo.</div></main>';
+    return subBar('Registrar pago', 'c_det') + `<main class="pad"><div class="card"><b>${esc(p.deudorNombre)}</b>${kv('Capital', money(p.capital))}${kv('Interés', money(p.interes))}${kv('Vence', fmtF(p.vence))}</div>
+    <label style="margin-top:4px">Tipo de pago</label>
+    <div class="two"><button type="button" class="opt" data-act="tipo" data-t="total" id="o_total">${ic('check', 24)}<b>Pago total</b><span>Cierra el préstamo</span></button>
+    <button type="button" class="opt" data-act="tipo" data-t="ren" id="o_ren">${ic('renew', 24)}<b>Renovación</b><span>Solo el interés</span></button></div>
+    <form data-form="pago" data-live="pago" data-id="${p.id}">
+      <div id="f_tasa" class="oculto"><label for="ntasa">Tasa del nuevo ciclo (%)</label><input id="ntasa" name="ntasa" inputmode="decimal" value="${p.tasa}"></div>
+      <label for="obsp">Observaciones (opcional)</label><textarea id="obsp" name="obs" placeholder="Ej: pagó la mitad en efectivo"></textarea>
+      <div class="box" id="resumen">Elige pago total o renovación para ver el resumen.</div>
+      <div class="err" id="perr"></div>
+      <button class="btn" type="submit">Confirmar pago</button>
+    </form></main>` + navHTML(NAV_C, 'c_inicio');
+  },
+  c_gastos() {
+    const g = S.params.gastos;
+    const lista = g === undefined ? '<div class="small">Cargando…</div>' : g.length ? g.map(m => `<div class="card" style="padding:10px 14px"><div class="kv"><span>${esc(m.nota || 'Gasto')}</span><span>${money(m.monto)}</span></div><div class="small">${esc(fmtFH(m.fecha))}</div></div>`).join('') : '<div class="small">Aún no registras gastos.</div>';
+    return cajaBar() + `<main class="pad"><h2 style="margin-top:4px">Registrar gasto</h2>
+    <form data-form="gasto" autocomplete="off">
+      <label>Concepto</label><div class="chips" id="chips"><button type="button" class="chip" data-act="chip" data-c="Gasolina">Gasolina</button><button type="button" class="chip" data-act="chip" data-c="Plan de datos">Plan de datos</button><button type="button" class="chip" data-act="chip" data-c="Otro">Otro</button></div>
+      <input type="hidden" name="concepto" id="concepto">
+      <label for="gmonto">Monto</label><input id="gmonto" name="monto" inputmode="numeric" placeholder="20000">
+      <label for="gnota">Detalle (opcional)</label><input id="gnota" name="nota" placeholder="Ej: tanqueada de la moto">
+      <div class="small" style="margin-top:8px">El gasto sale del dinero de tu caja.</div>
+      <button class="btn" type="submit">Guardar gasto</button>
+    </form><h2>Últimos gastos</h2>${lista}</main>` + navHTML(NAV_C, 'c_gastos');
+  },
+  c_hist() {
+    const tab = S.params.tab || 'pagados';
+    const tabs = `<div class="tabs"><button data-act="tab" data-t="pagados" class="${tab === 'pagados' ? 'on' : ''}">Pagados</button><button data-act="tab" data-t="mora" class="${tab === 'mora' ? 'on' : ''}">En mora</button><button data-act="tab" data-t="anio" class="${tab === 'anio' ? 'on' : ''}">Año</button></div>`;
+    let cuerpo = '';
+    if (tab === 'pagados') {
+      const l = S.params.pagados;
+      cuerpo = l === undefined ? '<div class="small">Cargando…</div>' : l.length ? l.map(p => `<div class="card" style="padding:10px 14px"><div class="kv"><b>${esc(p.deudorNombre)}</b><span>${money(totalP(p))}</span></div><div class="small">Pagado ${p.pagadoEn ? esc(fmtF(p.pagadoEn)) : ''}, capital ${money(p.capital)}</div></div>`).join('') : '<div class="vacio">Aún no hay préstamos pagados.</div>';
+    } else if (tab === 'mora') {
+      const l = S.prestamos.filter(p => p.vence < hoy0());
+      cuerpo = l.length ? l.map(filaP).join('') : '<div class="vacio">No tienes deudores en mora.</div>';
+    } else {
+      const y = S.params.anio || new Date().getFullYear(), r = S.params.res;
+      const opts = [0, 1, 2].map(i => new Date().getFullYear() - i).map(a => `<option value="${a}" ${a === y ? 'selected' : ''}>${a}</option>`).join('');
+      let det = '<div class="small">Cargando…</div>';
+      if (r) {
+        const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        det = `<div class="card">${kv('Prestado', money(r.prestado))}${kv('Cobrado', money(r.cobrado))}${kv('Intereses ganados', money(r.intereses))}${kv('Gastos', money(r.gastos))}${kv('<b>Utilidad</b>', '<b>' + money(r.intereses - r.gastos) + '</b>')}</div>
+        <h2>Por mes</h2>${r.meses.map((m, i) => (m.prestado || m.intereses || m.gastos) ? `<div class="card" style="padding:10px 14px"><div class="kv"><b>${meses[i]}</b><span>Intereses ${money(m.intereses)}</span></div><div class="small">Prestado ${money(m.prestado)}, gastos ${money(m.gastos)}</div></div>` : '').join('')}`;
+      }
+      cuerpo = `<label for="anio" style="margin-top:0">Año</label><select id="anio" data-act="anio">${opts}</select><div style="margin-top:12px">${det}</div>`;
+    }
+    return cajaBar() + `<main class="pad"><h2 style="margin-top:4px">Historial</h2>${tabs}${cuerpo}</main>` + navHTML(NAV_C, 'c_hist');
+  },
+  c_perfil() {
+    return cajaBar() + `<main class="pad"><h2 style="margin-top:4px">Mi perfil</h2><div class="card">${kv('Nombre', esc(S.nombre))}${kv('Usuario', esc((S.user.email || '').replace(DOMINIO, '')))}</div>${formClave()}<button class="btn red" data-act="salir">${ic('out', 20)} Cerrar sesión</button></main>` + navHTML(NAV_C, 'c_perfil');
+  },
+  a_resumen() {
+    const tot = S.cobradores.reduce((a, c) => a + c.caja, 0), calle = S.cobradores.reduce((a, c) => a + c.calle, 0);
+    const lista = S.cobradores.length ? S.cobradores.map(c => `<button class="row" data-act="cob" data-id="${c.id}"><div class="av">${esc(ini2(c.nombre))}</div><div class="info"><b>${esc(c.nombre)}</b><span>${c.activos} activos${c.mora ? ', ' + c.mora + ' en mora' : ''}${c.activo === false ? ', desactivado' : ''}</span></div><div class="der"><b>${money(c.caja)}</b><span>caja</span></div></button>`).join('') : '<div class="vacio">Aún no hay cobradores.<br>Crea el primero en Crear.</div>';
+    return `<header class="top"><div><small>Dinero en cajas</small><strong>${money(tot)}</strong></div><div class="who">Administrador</div></header><main class="pad"><div class="kpis"><div class="kpi"><small>En la calle</small><b>${money(calle)}</b></div><div class="kpi"><small>Cobradores</small><b>${S.cobradores.length}</b></div></div><h2>Cobradores</h2>${lista}<button class="btn sec min" data-act="refrescar">${ic('refresh', 18)} Actualizar</button></main>` + navHTML(NAV_A, 'a_resumen');
+  },
+  a_cob() {
+    const c = S.cobradores.find(x => x.id === S.params.id);
+    if (!c) return subBar('Cobrador', 'a_resumen') + '<main class="pad"><div class="vacio">No se encontró el cobrador.</div></main>';
+    const pr = S.params.pr, mv = S.params.mv;
+    const lp = pr === undefined ? '<div class="small">Cargando…</div>' : pr.length ? pr.map(p => { const e = estadoP(p); return `<div class="card" style="padding:10px 14px"><div class="kv"><b>${esc(p.deudorNombre)}</b><span>${money(totalP(p))}</span></div><div class="small" style="${e.mora ? 'color:var(--rojo);font-weight:600' : ''}">${e.txt}, tasa ${p.tasa}%</div></div>`; }).join('') : '<div class="small">Sin préstamos activos.</div>';
+    const lm = mv === undefined ? '<div class="small">Cargando…</div>' : mv.length ? mv.map(m => `<div class="card" style="padding:10px 14px"><div class="kv"><span>${esc(m.tipo.replace('_', ' '))}${m.deudorNombre ? ' - ' + esc(m.deudorNombre) : ''}</span><span>${m.efecto < 0 ? '-' : '+'}${money(Math.abs(m.efecto))}</span></div><div class="small">${esc(fmtFH(m.fecha))}${m.nota ? ' - ' + esc(m.nota) : ''}</div></div>`).join('') : '<div class="small">Sin movimientos.</div>';
+    return subBar(c.nombre, 'a_resumen') + `<main class="pad"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><b>Caja</b><b style="font-size:22px">${money(c.caja)}</b></div>${kv('Usuario', esc(c.usuario))}${kv('Activos', c.activos)}${kv('En mora', c.mora)}${kv('En la calle', money(c.calle))}${kv('Estado', c.activo === false ? '<span class="badge red">Desactivado</span>' : '<span class="badge">Activo</span>')}</div>
+    <form data-form="caja" data-id="${c.id}"><label for="cmonto">Dinero para la caja</label><input id="cmonto" name="monto" inputmode="numeric" placeholder="1000000"><label for="cnota">Nota (opcional)</label><input id="cnota" name="nota">
+    <div class="two"><button class="btn" type="submit" name="tipo" value="asignacion">Asignar</button><button class="btn sec" type="submit" name="tipo" value="retiro">Retirar</button></div></form>
+    <h2>Préstamos activos</h2>${lp}<h2>Últimos movimientos</h2>${lm}
+    <h2>Acceso</h2><form data-form="reset" data-id="${c.id}"><label for="rpin">Nueva clave (6 números o más)</label><input id="rpin" name="pin" inputmode="numeric"><button class="btn sec" type="submit">Restablecer acceso</button></form>
+    <button class="btn ${c.activo === false ? '' : 'red'}" data-act="activo" data-id="${c.id}">${c.activo === false ? 'Activar cobrador' : 'Desactivar cobrador'}</button></main>` + navHTML(NAV_A, 'a_resumen');
+  },
+  a_nuevo() {
+    return `<header class="top"><div><small>Administrador</small><strong>Nuevo cobrador</strong></div></header><main class="pad"><form data-form="cobrador" autocomplete="off">
+    <label for="cn">Nombre</label><input id="cn" name="nombre"><label for="cu">Usuario</label><input id="cu" name="usuario" autocapitalize="none" placeholder="carlos">
+    <label for="cp">Clave (6 números o más)</label><input id="cp" name="pin" inputmode="numeric"><label for="cc">Dinero inicial de la caja (opcional)</label><input id="cc" name="caja" inputmode="numeric" placeholder="1000000">
+    <button class="btn" type="submit">Crear cobrador</button></form><p class="small" style="margin-top:14px">Con ese usuario y esa clave el cobrador entra desde su celular.</p></main>` + navHTML(NAV_A, 'a_nuevo');
+  },
+  a_backup() {
+    return `<header class="top"><div><small>Administrador</small><strong>Copia de seguridad</strong></div></header><main class="pad"><div class="card">Descarga un archivo de Excel con todos los cobradores, deudores, préstamos y movimientos.</div><button class="btn" data-act="backup">${ic('down', 20)} Descargar Excel</button><div class="small" id="bst" style="margin-top:10px"></div></main>` + navHTML(NAV_A, 'a_backup');
+  },
+  a_perfil() {
+    return `<header class="top"><div><small>Administrador</small><strong>Mi perfil</strong></div></header><main class="pad"><div class="card">${kv('Correo', esc(S.user.email))}</div>${formClave()}<button class="btn red" data-act="salir">${ic('out', 20)} Cerrar sesión</button></main>` + navHTML(NAV_A, 'a_perfil');
+  }
+};
+function formClave() {
+  return `<h2>Cambiar clave</h2><form data-form="clave"><label for="k1">Clave actual</label><input id="k1" name="actual" type="password"><label for="k2">Clave nueva</label><input id="k2" name="nueva" type="password"><button class="btn sec" type="submit">Cambiar clave</button></form>`;
+}
+
+function render() {
+  const v = V[S.view];
+  $('#app').innerHTML = v ? v() : '';
+}
+function go(view, params) {
+  S.view = view; S.params = params || {};
+  render(); window.scrollTo(0, 0);
+}
+
+async function abrirHist(tab) {
+  S.params = { ...S.params, tab };
+  S.view = 'c_hist'; render();
+  if (tab === 'pagados' && S.params.pagados === undefined) {
+    const s = await getDocs(query(col(S.cid, 'prestamos'), where('estado', '==', 'pagado')));
+    S.params.pagados = s.docs.map(d => norm(d.id, d.data())).sort((a, b) => (b.pagadoEn || 0) - (a.pagadoEn || 0));
+  }
+  if (tab === 'anio') await cargarAnio(S.params.anio || new Date().getFullYear());
+  if (S.view === 'c_hist') render();
+}
+async function cargarAnio(y) {
+  S.params.anio = y; S.params.res = null; render();
+  const s = await getDocs(query(col(S.cid, 'movimientos'), where('fecha', '>=', Timestamp.fromDate(new Date(y, 0, 1))), where('fecha', '<', Timestamp.fromDate(new Date(y + 1, 0, 1)))));
+  const r = { prestado: 0, cobrado: 0, intereses: 0, gastos: 0, meses: Array.from({ length: 12 }, () => ({ prestado: 0, intereses: 0, gastos: 0 })) };
+  s.forEach(d => {
+    const m = d.data(), mes = m.fecha.toDate().getMonth();
+    if (m.tipo === 'prestamo') { r.prestado += m.monto; r.meses[mes].prestado += m.monto; }
+    else if (m.tipo === 'gasto') { r.gastos += m.monto; r.meses[mes].gastos += m.monto; }
+    else if (m.tipo === 'pago_total' || m.tipo === 'renovacion') { r.cobrado += m.monto; r.intereses += m.interes || 0; r.meses[mes].intereses += m.interes || 0; }
+  });
+  S.params.res = r;
+}
+async function abrirGastos() {
+  S.params = {}; S.view = 'c_gastos'; render();
+  const s = await getDocs(query(col(S.cid, 'movimientos'), where('tipo', '==', 'gasto')));
+  S.params.gastos = s.docs.map(d => d.data()).sort((a, b) => b.fecha.toMillis() - a.fecha.toMillis()).slice(0, 30);
+  if (S.view === 'c_gastos') render();
+}
+async function abrirDet(id) {
+  S.params = { id, movs: null }; S.view = 'c_det'; render(); window.scrollTo(0, 0);
+  const s = await getDocs(query(col(S.cid, 'movimientos'), where('prestamoId', '==', id)));
+  S.params.movs = s.docs.map(d => d.data()).sort((a, b) => b.fecha.toMillis() - a.fecha.toMillis());
+  if (S.view === 'c_det' && S.params.id === id) render();
+}
+async function abrirCob(id) {
+  S.params = { id }; S.view = 'a_cob'; render(); window.scrollTo(0, 0);
+  const [pr, ms] = await Promise.all([cargarActivos(id), getDocs(query(col(id, 'movimientos'), orderBy('fecha', 'desc'), limit(15)))]);
+  S.params.pr = pr; S.params.mv = ms.docs.map(d => d.data());
+  if (S.view === 'a_cob' && S.params.id === id) render();
+}
+
+function pagoUI() {
+  const p = S.prestamos.find(x => x.id === S.params.id); if (!p) return;
+  const t = S.params.tipo;
+  $('#o_total').classList.toggle('sel', t === 'total');
+  $('#o_ren').classList.toggle('sel', t === 'ren');
+  $('#f_tasa').classList.toggle('oculto', t !== 'ren');
+  const r = $('#resumen');
+  if (t === 'total') {
+    r.innerHTML = `<b>Pago total: ${money(totalP(p))}</b><br>Capital ${money(p.capital)} + interés ${money(p.interes)}. El préstamo se cerrará y pasará al historial de pagados.`;
+  } else if (t === 'ren') {
+    const nt = tasaNum($('#ntasa').value);
+    const base = p.vence >= hoy0() ? p.vence : hoy0();
+    r.innerHTML = `<b>Renovación: ${money(p.interes)}</b><br>Paga solo el interés. El capital de ${money(p.capital)} sigue vivo, con interés de ${money(interes(p.capital, nt))} (${nt}%) y nuevo vencimiento el ${fmtF(addDias(base, p.plazo))}.`;
+  }
+}
+
+const A = {
+  ir(t) {
+    const v = t.dataset.v;
+    if (v === 'c_hist') return abrirHist(S.params.tab || 'pagados');
+    if (v === 'c_gastos') return abrirGastos();
+    if (v === 'c_det') return abrirDet(S.params.id);
+    go(v);
+  },
+  abrir(t) { return abrirDet(t.dataset.id); },
+  pagar(t) { go('c_pago', { id: t.dataset.id, tipo: null }); },
+  tipo(t) { S.params.tipo = t.dataset.t; pagoUI(); },
+  chip(t) {
+    document.querySelectorAll('.chip').forEach(c => c.classList.toggle('sel', c === t));
+    $('#concepto').value = t.dataset.c;
+  },
+  tab(t) { return abrirHist(t.dataset.t); },
+  anio(t) { return run(null, async () => { await cargarAnio(parseInt(t.value, 10)); render(); }); },
+  refrescar(t) {
+    return run(t, async () => {
+      if (S.rol === 'admin') { await cargarAdmin(); go('a_resumen'); }
+      else { await cargarCobrador(); go('c_inicio'); }
+      toast('Actualizado');
+    });
+  },
+  cob(t) { return abrirCob(t.dataset.id); },
+  salir() { return signOut(auth); },
+  activo(t) {
+    return run(t, async () => {
+      const c = S.cobradores.find(x => x.id === t.dataset.id);
+      const nuevo = c.activo === false;
+      if (!confirm(nuevo ? '¿Activar a ' + c.nombre + '?' : '¿Desactivar a ' + c.nombre + '? No podrá entrar a la app.')) return;
+      const b = writeBatch(db);
+      b.update(doc(db, 'users', c.uid), { activo: nuevo });
+      b.update(doc(db, 'carteras', c.id), { activo: nuevo });
+      await b.commit();
+      c.activo = nuevo;
+      render(); toast(nuevo ? 'Cobrador activado' : 'Cobrador desactivado');
+    });
+  },
+  backup(t) { return run(t, respaldo); }
+};
+
+let secApp = null;
+async function crearAuth(email, pin) {
+  if (!secApp) secApp = initializeApp(firebaseConfig, 'sec');
+  const a = getAuth(secApp);
+  const c = await createUserWithEmailAndPassword(a, email, pin);
+  const uid = c.user.uid;
+  await signOut(a);
+  return uid;
+}
+const pinOk = p => /^\d{6,}$/.test(p);
+
+const F = {
+  async login(f) {
+    const u = f.usuario.value, p = f.pin.value;
+    S.loginUser = u;
+    if (!u.trim() || !p) { S.loginError = 'Escribe tu usuario y tu clave.'; return render(); }
+    S.loginError = '';
+    const btn = f.querySelector('button'); btn.disabled = true;
+    try { await signInWithEmailAndPassword(auth, emailDe(u), p); }
+    catch (e) {
+      const c = e.code || '';
+      S.loginError = c.includes('too-many') ? 'Demasiados intentos. Espera unos minutos.' : c.includes('network') ? 'Sin conexión. Revisa tu internet.' : 'Usuario o clave incorrectos.';
+      render();
+    }
+  },
+  nuevo(f) {
+    return run(f.querySelector('button'), async () => {
+      const nombre = f.nombre.value.trim(), cel = f.celular.value.trim(), monto = num(f.monto.value), tasa = tasaNum(f.tasa.value), plazo = num(f.plazo.value), obs = f.obs.value.trim();
+      if (!nombre) return toast('Escribe el nombre del deudor', 'err');
+      if (!/^\d{10}$/.test(cel)) return toast('El celular debe tener 10 números', 'err');
+      if (monto <= 0) return toast('Escribe el monto prestado', 'err');
+      if (tasa <= 0) return toast('Escribe la tasa de interés', 'err');
+      if (plazo < 1) return toast('Escribe el plazo en días', 'err');
+      if (monto > S.caja) return toast('Tu caja (' + money(S.caja) + ') no alcanza para este préstamo', 'err');
+      const ex = await getDocs(query(col(S.cid, 'deudores'), where('celular', '==', cel)));
+      const dRef = ex.empty ? doc(col(S.cid, 'deudores')) : ex.docs[0].ref;
+      const inicio = hoy0(), vence = addDias(inicio, plazo), now = Timestamp.now();
+      const b = writeBatch(db);
+      b.set(dRef, ex.empty ? { nombre, celular: cel, observaciones: obs, creado: now } : { nombre, celular: cel, observaciones: obs }, { merge: true });
+      const pRef = doc(col(S.cid, 'prestamos'));
+      const pd = { deudorId: dRef.id, deudorNombre: nombre, celular: cel, capital: monto, tasa, plazo, interes: interes(monto, tasa), inicio: Timestamp.fromDate(inicio), vence: Timestamp.fromDate(vence), estado: 'activo', observaciones: obs, ciclos: 1, creado: now };
+      b.set(pRef, pd);
+      b.set(doc(col(S.cid, 'movimientos')), { tipo: 'prestamo', monto, efecto: -monto, fecha: now, prestamoId: pRef.id, deudorNombre: nombre, nota: obs });
+      await b.commit();
+      await cargarCobrador();
+      go('c_ok', { p: { ...pd, id: pRef.id, vence } });
+    });
+  },
+  obs(f) {
+    return run(f.querySelector('button'), async () => {
+      const p = S.prestamos.find(x => x.id === f.dataset.id), obs = f.obs.value.trim();
+      const b = writeBatch(db);
+      b.update(doc(col(S.cid, 'prestamos'), p.id), { observaciones: obs });
+      b.set(doc(col(S.cid, 'deudores'), p.deudorId), { observaciones: obs }, { merge: true });
+      await b.commit();
+      p.observaciones = obs; toast('Observaciones guardadas');
+    });
+  },
+  pago(f) {
+    return run(f.querySelector('button'), async () => {
+      const p = S.prestamos.find(x => x.id === f.dataset.id), t = S.params.tipo, obs = f.obs.value.trim();
+      if (!t) { $('#perr').textContent = 'Elige pago total o renovación primero.'; return; }
+      $('#perr').textContent = '';
+      const now = Timestamp.now(), b = writeBatch(db), mRef = doc(col(S.cid, 'movimientos')), pRef = doc(col(S.cid, 'prestamos'), p.id);
+      if (t === 'total') {
+        b.set(mRef, { tipo: 'pago_total', monto: totalP(p), efecto: totalP(p), interes: p.interes, fecha: now, prestamoId: p.id, deudorNombre: p.deudorNombre, nota: obs });
+        b.update(pRef, { estado: 'pagado', pagadoEn: now });
+      } else {
+        const nt = tasaNum(f.ntasa.value);
+        if (nt <= 0) { $('#perr').textContent = 'Escribe la tasa del nuevo ciclo.'; return; }
+        const base = p.vence >= hoy0() ? p.vence : hoy0();
+        b.set(mRef, { tipo: 'renovacion', monto: p.interes, efecto: p.interes, interes: p.interes, fecha: now, prestamoId: p.id, deudorNombre: p.deudorNombre, nota: obs });
+        b.update(pRef, { vence: Timestamp.fromDate(addDias(base, p.plazo)), tasa: nt, interes: interes(p.capital, nt), ciclos: (p.ciclos || 1) + 1, ultimaRenovacion: now });
+      }
+      await b.commit();
+      await cargarCobrador();
+      toast(t === 'total' ? 'Pago total registrado' : 'Renovación registrada');
+      go('c_inicio');
+    });
+  },
+  gasto(f) {
+    return run(f.querySelector('button'), async () => {
+      const monto = num(f.monto.value), conc = f.concepto.value, nota = f.nota.value.trim();
+      if (!conc) return toast('Elige el concepto del gasto', 'err');
+      if (monto <= 0) return toast('Escribe el monto del gasto', 'err');
+      if (monto > S.caja) return toast('Tu caja (' + money(S.caja) + ') no alcanza para este gasto', 'err');
+      await addDoc(col(S.cid, 'movimientos'), { tipo: 'gasto', monto, efecto: -monto, fecha: Timestamp.now(), nota: conc + (nota ? ': ' + nota : '') });
+      await cargarCobrador();
+      toast('Gasto guardado');
+      await abrirGastos();
+    });
+  },
+  clave(f) {
+    return run(f.querySelector('button'), async () => {
+      const a = f.actual.value, n = f.nueva.value;
+      if (!a || !n) return toast('Escribe la clave actual y la nueva', 'err');
+      if (S.rol === 'cobrador' ? !pinOk(n) : n.length < 6) return toast(S.rol === 'cobrador' ? 'La clave nueva debe tener 6 números o más' : 'La clave nueva debe tener 6 caracteres o más', 'err');
+      await reauthenticateWithCredential(auth.currentUser, EmailAuthProvider.credential(auth.currentUser.email, a));
+      await updatePassword(auth.currentUser, n);
+      f.reset(); toast('Clave cambiada');
+    });
+  },
+  caja(f, ev) {
+    return run(f.querySelector('button'), async () => {
+      const tipo = ev && ev.submitter && ev.submitter.value ? ev.submitter.value : 'asignacion';
+      const monto = num(f.monto.value), nota = f.nota.value.trim(), c = S.cobradores.find(x => x.id === f.dataset.id);
+      if (monto <= 0) return toast('Escribe el monto', 'err');
+      if (tipo === 'retiro' && monto > c.caja) return toast('La caja solo tiene ' + money(c.caja), 'err');
+      await addDoc(col(c.id, 'movimientos'), { tipo, monto, efecto: tipo === 'asignacion' ? monto : -monto, fecha: Timestamp.now(), nota });
+      c.caja = await cargarCaja(c.id);
+      await abrirCob(c.id);
+      toast(tipo === 'asignacion' ? 'Dinero asignado' : 'Dinero retirado');
+    });
+  },
+  cobrador(f) {
+    return run(f.querySelector('button'), async () => {
+      const nombre = f.nombre.value.trim(), usuario = f.usuario.value.trim().toLowerCase().replace(/[^a-z0-9._-]/g, ''), pin = f.pin.value, caja = num(f.caja.value);
+      if (!nombre || !usuario) return toast('Escribe el nombre y el usuario', 'err');
+      if (!pinOk(pin)) return toast('La clave debe tener 6 números o más', 'err');
+      const uid = await crearAuth(emailDe(usuario), pin);
+      const cRef = doc(collection(db, 'carteras')), now = Timestamp.now(), b = writeBatch(db);
+      b.set(cRef, { nombre, usuario, uid, activo: true, creado: now });
+      b.set(doc(db, 'users', uid), { rol: 'cobrador', nombre, usuario, cobradorId: cRef.id, activo: true });
+      if (caja > 0) b.set(doc(col(cRef.id, 'movimientos')), { tipo: 'asignacion', monto: caja, efecto: caja, fecha: now, nota: 'Caja inicial' });
+      await b.commit();
+      await cargarAdmin();
+      toast('Cobrador creado');
+      go('a_resumen');
+    });
+  },
+  reset(f) {
+    return run(f.querySelector('button'), async () => {
+      const c = S.cobradores.find(x => x.id === f.dataset.id), pin = f.pin.value;
+      if (!pinOk(pin)) return toast('La clave debe tener 6 números o más', 'err');
+      let uid;
+      try { uid = await crearAuth(emailDe(c.usuario), pin); }
+      catch (e) {
+        if ((e.code || '').includes('email-already-in-use')) return toast('Primero elimina el usuario "' + c.usuario + '" en Firebase, Authentication, y vuelve a intentar', 'err');
+        throw e;
+      }
+      const b = writeBatch(db);
+      b.set(doc(db, 'users', uid), { rol: 'cobrador', nombre: c.nombre, usuario: c.usuario, cobradorId: c.id, activo: c.activo !== false });
+      b.update(doc(db, 'carteras', c.id), { uid });
+      if (c.uid && c.uid !== uid) b.delete(doc(db, 'users', c.uid));
+      await b.commit();
+      c.uid = uid; f.reset();
+      toast('Acceso restablecido');
+    });
+  }
+};
+
+const L = {
+  nuevo(f) {
+    const m = num(f.monto.value), t = tasaNum(f.tasa.value), p = num(f.plazo.value) || 24, i = interes(m, t);
+    $('#prev').innerHTML = m ? `Interés ${money(i)}<br><b>Total a cobrar ${money(m + i)}</b> el ${fmtF(addDias(hoy0(), p))}` : 'Escribe el monto para ver el resumen.';
+  },
+  pago() { pagoUI(); }
+};
+
+function cargarScript(src) {
+  return new Promise((ok, fail) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = fail; document.head.appendChild(s); });
+}
+async function respaldo() {
+  const st = $('#bst'); st.textContent = 'Reuniendo datos…';
+  const hojas = { Cobradores: [], Deudores: [], Prestamos: [], Movimientos: [] };
+  const cs = await getDocs(collection(db, 'carteras'));
+  for (const c of cs.docs) {
+    const cd = c.data();
+    hojas.Cobradores.push({ id: c.id, nombre: cd.nombre, usuario: cd.usuario, activo: cd.activo === false ? 'no' : 'si', creado: fmtFH(cd.creado) });
+    const [d, p, m] = await Promise.all(['deudores', 'prestamos', 'movimientos'].map(n => getDocs(col(c.id, n))));
+    d.forEach(x => { const v = x.data(); hojas.Deudores.push({ cobrador: cd.nombre, nombre: v.nombre, celular: v.celular, observaciones: v.observaciones || '' }); });
+    p.forEach(x => { const v = x.data(); hojas.Prestamos.push({ cobrador: cd.nombre, deudor: v.deudorNombre, celular: v.celular, capital: v.capital, tasa: v.tasa, interes: v.interes, plazo: v.plazo, inicio: fmtFH(v.inicio), vence: fmtFH(v.vence), estado: v.estado, ciclos: v.ciclos || 1, observaciones: v.observaciones || '' }); });
+    m.forEach(x => { const v = x.data(); hojas.Movimientos.push({ cobrador: cd.nombre, fecha: fmtFH(v.fecha), tipo: v.tipo, deudor: v.deudorNombre || '', monto: v.monto, efecto: v.efecto, interes: v.interes || '', nota: v.nota || '' }); });
+  }
+  st.textContent = 'Generando el archivo…';
+  try { await cargarScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'); }
+  catch (e) { st.textContent = ''; return toast('No se pudo cargar el generador de Excel. Revisa tu internet.', 'err'); }
+  const wb = window.XLSX.utils.book_new();
+  Object.keys(hojas).forEach(n => window.XLSX.utils.book_append_sheet(wb, window.XLSX.utils.json_to_sheet(hojas[n]), n));
+  const h = new Date(), p2 = n => String(n).padStart(2, '0');
+  window.XLSX.writeFile(wb, `respaldo-cartera-${h.getFullYear()}-${p2(h.getMonth() + 1)}-${p2(h.getDate())}.xlsx`);
+  st.textContent = 'Listo. El archivo quedó en tus descargas.';
+}
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-act]');
+  if (!t || t.tagName === 'SELECT') return;
+  const fn = A[t.dataset.act];
+  if (fn) { const r = fn(t); if (r && r.catch) r.catch(err => { console.error(err); toast(msgErr(err), 'err'); }); }
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.tagName === 'SELECT' && t.dataset.act && A[t.dataset.act]) A[t.dataset.act](t);
+});
+document.addEventListener('submit', e => {
+  e.preventDefault();
+  const f = e.target, fn = F[f.dataset.form];
+  if (fn) { const r = fn(f, e); if (r && r.catch) r.catch(err => { console.error(err); toast(msgErr(err), 'err'); }); }
+});
+document.addEventListener('input', e => {
+  const f = e.target.closest('form');
+  if (f && f.dataset.live && L[f.dataset.live]) L[f.dataset.live](f);
+});
+
+async function fallo(msg) { S.loginError = msg; await signOut(auth); }
+
+onAuthStateChanged(auth, async u => {
+  if (!u) { S.user = null; S.rol = null; go('login'); return; }
+  S.user = u;
+  $('#app').innerHTML = '<div class="splash">Cargando…</div>';
+  try {
+    if ((u.email || '').toLowerCase() === ADMIN_EMAIL) {
+      S.rol = 'admin'; S.nombre = 'Administrador';
+      await cargarAdmin(); go('a_resumen');
+    } else {
+      const us = await getDoc(doc(db, 'users', u.uid));
+      if (!us.exists()) return fallo('Tu usuario todavía no está configurado. Avisa al administrador.');
+      const d = us.data();
+      if (d.activo === false) return fallo('Tu cuenta está desactivada. Habla con el administrador.');
+      S.rol = 'cobrador'; S.cid = d.cobradorId; S.nombre = d.nombre;
+      await cargarCobrador(); go('c_inicio');
+    }
+  } catch (e) {
+    console.error(e);
+    fallo('No se pudo cargar tu información. Revisa tu internet e intenta de nuevo.');
+  }
+});
+</script>
+</body>
+</html>
