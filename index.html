@@ -4,8 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0E4D2E">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Cartera">
 <meta name="robots" content="noindex, nofollow">
 <title>Cartera</title>
+<link rel="icon" id="fav" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%231E7B4A'/%3E%3Ctext x='32' y='47' text-anchor='middle' font-size='44' font-weight='700' fill='white' font-family='sans-serif'%3E$%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js">
 <style>
 :root{--v:#1E7B4A;--vo:#0E4D2E;--vm:#E3F2E8;--bg:#F4F8F5;--tx:#14231B;--tx2:#5A6B61;--bd:#D7E3DA;--rojo:#B3261E;--rojob:#FCE8E6;--amb:#8A5A00;--ambb:#FFF1D6;--w:#fff}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -70,7 +79,8 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--v);outline-offse
 .err{color:var(--rojo);font-size:14px;margin:10px 2px 0}
 .vacio{text-align:center;color:var(--tx2);padding:28px 12px}
 .login{padding:56px 22px 24px}
-.login .logo{width:64px;height:64px;border-radius:18px;background:var(--v);color:#fff;display:flex;align-items:center;justify-content:center;margin-bottom:18px}
+.login .logo{width:72px;height:72px;margin-bottom:18px}.login .logo svg{display:block}
+.lg{display:flex;align-items:center;gap:12px}.lg>svg{flex:none}
 .login h1{font-size:28px;margin:0 0 4px;letter-spacing:-.5px}
 .login p{color:var(--tx2);margin:0 0 8px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;background:var(--tx);color:#fff;padding:12px 18px;border-radius:12px;font-size:15px;max-width:90%;z-index:9}
@@ -86,7 +96,7 @@ a{color:var(--v)}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit, writeBatch, Timestamp, getAggregateFromServer, sum } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit, writeBatch, Timestamp, getAggregateFromServer, sum } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCskEGbFtpuMG0DuIOaEsM_qgq8fd-EZVg",
@@ -101,9 +111,31 @@ const DOMINIO = "@cartera-ad10b.app";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
+const db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
 
-const S = { user:null, rol:null, cid:null, nombre:'', caja:0, prestamos:[], cobradores:[], view:'login', params:{}, loginError:'', loginUser:'' };
+const S = { user:null, rol:null, cid:null, nombre:'', caja:0, prestamos:[], cobradores:[], view:'login', params:{}, loginError:'', loginUser:'', stale:false };
+
+const CK = 'cartera_v1_';
+const guardar = () => {
+  try {
+    if (!S.user) return;
+    const d = S.rol === 'admin'
+      ? { rol: 'admin', cobradores: S.cobradores.map(c => ({ id: c.id, nombre: c.nombre, usuario: c.usuario, uid: c.uid, activo: c.activo, caja: c.caja, activos: c.activos, mora: c.mora, calle: c.calle })) }
+      : { rol: 'cobrador', cid: S.cid, nombre: S.nombre, caja: S.caja, prestamos: S.prestamos.map(p => ({ ...p, vence: p.vence.toISOString(), inicio: p.inicio.toISOString(), pagadoEn: p.pagadoEn ? p.pagadoEn.toISOString() : null })) };
+    localStorage.setItem(CK + S.user.uid, JSON.stringify(d));
+  } catch (_) {}
+};
+const leer = uid => {
+  try {
+    const d = JSON.parse(localStorage.getItem(CK + uid));
+    if (!d) return null;
+    if (d.prestamos) d.prestamos = d.prestamos.map(p => ({ ...p, vence: new Date(p.vence), inicio: new Date(p.inicio), pagadoEn: p.pagadoEn ? new Date(p.pagadoEn) : null }));
+    return d;
+  } catch (_) { return null; }
+};
+const limpiarCache = () => {
+  try { Object.keys(localStorage).filter(k => k.startsWith(CK)).forEach(k => localStorage.removeItem(k)); } catch (_) {}
+};
 
 const I = {
   home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
@@ -124,9 +156,12 @@ const I = {
 };
 const ic = (n, s = 22) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[n]}</svg>`;
 
+const LOGO = (s = 40) => `<svg width="${s}" height="${s}" viewBox="0 0 64 64" role="img" aria-label="Cartera"><rect x="1" y="1" width="62" height="62" rx="18" fill="#1E7B4A" stroke="rgba(255,255,255,.35)" stroke-width="2"/><text x="32" y="47" text-anchor="middle" font-size="44" font-weight="700" fill="#fff" font-family="system-ui,-apple-system,Roboto,sans-serif">$</text></svg>`;
+
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const money = n => '$' + Math.round(n || 0).toLocaleString('es-CO');
+const miles = n => String(Math.abs(Math.round(n || 0))).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+const money = n => (Math.round(n || 0) < 0 ? '-$' : '$') + miles(n);
 const hoy0 = () => { const d = new Date(); d.setHours(0,0,0,0); return d; };
 const addDias = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); x.setHours(0,0,0,0); return x; };
 const fmtF = d => d.toLocaleDateString('es-CO', { day:'numeric', month:'short', year:'numeric' }).replace(/\./g, '');
@@ -180,6 +215,7 @@ async function cargarActivos(cid) {
 async function cargarCobrador() {
   const [caja, pr] = await Promise.all([cargarCaja(S.cid), cargarActivos(S.cid)]);
   S.caja = caja; S.prestamos = pr;
+  guardar();
 }
 async function cargarAdmin() {
   const cs = await getDocs(collection(db, 'carteras'));
@@ -191,6 +227,7 @@ async function cargarAdmin() {
     return c;
   }));
   S.cobradores.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+  guardar();
 }
 
 function estadoP(p) {
@@ -207,14 +244,14 @@ function navHTML(items, active) {
 }
 const NAV_C = [['c_inicio','home','Inicio'],['c_nuevo','plus','Nuevo'],['c_gastos','wallet','Gastos'],['c_hist','clock','Historial'],['c_perfil','user','Perfil']];
 const NAV_A = [['a_resumen','users','Cobradores'],['a_nuevo','plus','Crear'],['a_backup','down','Respaldo'],['a_perfil','user','Perfil']];
-const cajaBar = () => `<header class="top"><div><small>Mi caja</small><strong>${money(S.caja)}</strong></div><div class="who">${esc(S.nombre)}</div></header>`;
+const cajaBar = () => `<header class="top"><div class="lg">${LOGO(36)}<div><small>Mi caja</small><strong>${money(S.caja)}</strong></div></div><div class="who">${esc(S.nombre)}</div></header>`;
 const subBar = (t, back) => `<header class="sub"><button data-act="ir" data-v="${back}" aria-label="Volver">${ic('back', 26)}</button><h1>${esc(t)}</h1></header>`;
 const filaP = p => { const e = estadoP(p); return `<button class="row ${e.mora ? 'mora' : ''}" data-act="abrir" data-id="${p.id}"><div class="av">${esc(ini2(p.deudorNombre))}</div><div class="info"><b>${esc(p.deudorNombre)}</b><span>Capital ${money(p.capital)}, tasa ${p.tasa}%</span></div><div class="der"><b>${money(totalP(p))}</b><span>${e.txt}</span></div></button>`; };
 const kv = (a, b) => `<div class="kv"><span>${a}</span><span>${b}</span></div>`;
 
 const V = {
   login() {
-    return `<div class="login"><div class="logo">${ic('coin', 34)}</div><h1>Cartera</h1><p>Entra con tu usuario y tu clave.</p>
+    return `<div class="login"><div class="logo">${LOGO(72)}</div><h1>Cartera</h1><p>Entra con tu usuario y tu clave.</p>
     <form data-form="login" autocomplete="off">
       <label for="usuario">Usuario</label><input id="usuario" name="usuario" autocapitalize="none" autocomplete="username" value="${esc(S.loginUser)}">
       <label for="pin">Clave</label><input id="pin" name="pin" type="password" autocomplete="current-password" inputmode="text">
@@ -235,7 +272,7 @@ const V = {
     <form data-form="nuevo" data-live="nuevo" autocomplete="off">
       <label for="nombre">Nombre del deudor</label><input id="nombre" name="nombre" autocomplete="off">
       <label for="celular">Celular (10 números)</label><input id="celular" name="celular" inputmode="numeric" maxlength="10" placeholder="3001234567">
-      <label for="monto">Monto prestado</label><input id="monto" name="monto" inputmode="numeric" placeholder="500000">
+      <label for="monto">Monto prestado</label><input id="monto" name="monto" inputmode="numeric" data-fmt placeholder="500.000">
       <div class="two"><div><label for="tasa">Tasa de interés (%)</label><input id="tasa" name="tasa" inputmode="decimal" placeholder="20"></div>
       <div><label for="plazo">Plazo (días)</label><input id="plazo" name="plazo" inputmode="numeric" value="24"></div></div>
       <label for="obs">Observaciones (opcional)</label><textarea id="obs" name="obs" placeholder="Anotaciones sobre el deudor"></textarea>
@@ -291,7 +328,7 @@ const V = {
     <form data-form="gasto" autocomplete="off">
       <label>Concepto</label><div class="chips" id="chips"><button type="button" class="chip" data-act="chip" data-c="Gasolina">Gasolina</button><button type="button" class="chip" data-act="chip" data-c="Plan de datos">Plan de datos</button><button type="button" class="chip" data-act="chip" data-c="Otro">Otro</button></div>
       <input type="hidden" name="concepto" id="concepto">
-      <label for="gmonto">Monto</label><input id="gmonto" name="monto" inputmode="numeric" placeholder="20000">
+      <label for="gmonto">Monto</label><input id="gmonto" name="monto" inputmode="numeric" data-fmt placeholder="20.000">
       <label for="gnota">Detalle (opcional)</label><input id="gnota" name="nota" placeholder="Ej: tanqueada de la moto">
       <div class="small" style="margin-top:8px">El gasto sale del dinero de tu caja.</div>
       <button class="btn" type="submit">Guardar gasto</button>
@@ -326,7 +363,7 @@ const V = {
   a_resumen() {
     const tot = S.cobradores.reduce((a, c) => a + c.caja, 0), calle = S.cobradores.reduce((a, c) => a + c.calle, 0);
     const lista = S.cobradores.length ? S.cobradores.map(c => `<button class="row" data-act="cob" data-id="${c.id}"><div class="av">${esc(ini2(c.nombre))}</div><div class="info"><b>${esc(c.nombre)}</b><span>${c.activos} activos${c.mora ? ', ' + c.mora + ' en mora' : ''}${c.activo === false ? ', desactivado' : ''}</span></div><div class="der"><b>${money(c.caja)}</b><span>caja</span></div></button>`).join('') : '<div class="vacio">Aún no hay cobradores.<br>Crea el primero en Crear.</div>';
-    return `<header class="top"><div><small>Dinero en cajas</small><strong>${money(tot)}</strong></div><div class="who">Administrador</div></header><main class="pad"><div class="kpis"><div class="kpi"><small>En la calle</small><b>${money(calle)}</b></div><div class="kpi"><small>Cobradores</small><b>${S.cobradores.length}</b></div></div><h2>Cobradores</h2>${lista}<button class="btn sec min" data-act="refrescar">${ic('refresh', 18)} Actualizar</button></main>` + navHTML(NAV_A, 'a_resumen');
+    return `<header class="top"><div class="lg">${LOGO(36)}<div><small>Dinero en cajas</small><strong>${money(tot)}</strong></div></div><div class="who">Administrador</div></header><main class="pad"><div class="kpis"><div class="kpi"><small>En la calle</small><b>${money(calle)}</b></div><div class="kpi"><small>Cobradores</small><b>${S.cobradores.length}</b></div></div><h2>Cobradores</h2>${lista}<button class="btn sec min" data-act="refrescar">${ic('refresh', 18)} Actualizar</button></main>` + navHTML(NAV_A, 'a_resumen');
   },
   a_cob() {
     const c = S.cobradores.find(x => x.id === S.params.id);
@@ -335,23 +372,23 @@ const V = {
     const lp = pr === undefined ? '<div class="small">Cargando…</div>' : pr.length ? pr.map(p => { const e = estadoP(p); return `<div class="card" style="padding:10px 14px"><div class="kv"><b>${esc(p.deudorNombre)}</b><span>${money(totalP(p))}</span></div><div class="small" style="${e.mora ? 'color:var(--rojo);font-weight:600' : ''}">${e.txt}, tasa ${p.tasa}%</div></div>`; }).join('') : '<div class="small">Sin préstamos activos.</div>';
     const lm = mv === undefined ? '<div class="small">Cargando…</div>' : mv.length ? mv.map(m => `<div class="card" style="padding:10px 14px"><div class="kv"><span>${esc(m.tipo.replace('_', ' '))}${m.deudorNombre ? ' - ' + esc(m.deudorNombre) : ''}</span><span>${m.efecto < 0 ? '-' : '+'}${money(Math.abs(m.efecto))}</span></div><div class="small">${esc(fmtFH(m.fecha))}${m.nota ? ' - ' + esc(m.nota) : ''}</div></div>`).join('') : '<div class="small">Sin movimientos.</div>';
     return subBar(c.nombre, 'a_resumen') + `<main class="pad"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><b>Caja</b><b style="font-size:22px">${money(c.caja)}</b></div>${kv('Usuario', esc(c.usuario))}${kv('Activos', c.activos)}${kv('En mora', c.mora)}${kv('En la calle', money(c.calle))}${kv('Estado', c.activo === false ? '<span class="badge red">Desactivado</span>' : '<span class="badge">Activo</span>')}</div>
-    <form data-form="caja" data-id="${c.id}"><label for="cmonto">Dinero para la caja</label><input id="cmonto" name="monto" inputmode="numeric" placeholder="1000000"><label for="cnota">Nota (opcional)</label><input id="cnota" name="nota">
+    <form data-form="caja" data-id="${c.id}"><label for="cmonto">Dinero para la caja</label><input id="cmonto" name="monto" inputmode="numeric" data-fmt placeholder="1.000.000"><label for="cnota">Nota (opcional)</label><input id="cnota" name="nota">
     <div class="two"><button class="btn" type="submit" name="tipo" value="asignacion">Asignar</button><button class="btn sec" type="submit" name="tipo" value="retiro">Retirar</button></div></form>
     <h2>Préstamos activos</h2>${lp}<h2>Últimos movimientos</h2>${lm}
     <h2>Acceso</h2><form data-form="reset" data-id="${c.id}"><label for="rpin">Nueva clave (6 números o más)</label><input id="rpin" name="pin" inputmode="numeric"><button class="btn sec" type="submit">Restablecer acceso</button></form>
     <button class="btn ${c.activo === false ? '' : 'red'}" data-act="activo" data-id="${c.id}">${c.activo === false ? 'Activar cobrador' : 'Desactivar cobrador'}</button></main>` + navHTML(NAV_A, 'a_resumen');
   },
   a_nuevo() {
-    return `<header class="top"><div><small>Administrador</small><strong>Nuevo cobrador</strong></div></header><main class="pad"><form data-form="cobrador" autocomplete="off">
+    return `<header class="top"><div class="lg">${LOGO(36)}<div><small>Administrador</small><strong>Nuevo cobrador</strong></div></div></header><main class="pad"><form data-form="cobrador" autocomplete="off">
     <label for="cn">Nombre</label><input id="cn" name="nombre"><label for="cu">Usuario</label><input id="cu" name="usuario" autocapitalize="none" placeholder="carlos">
-    <label for="cp">Clave (6 números o más)</label><input id="cp" name="pin" inputmode="numeric"><label for="cc">Dinero inicial de la caja (opcional)</label><input id="cc" name="caja" inputmode="numeric" placeholder="1000000">
+    <label for="cp">Clave (6 números o más)</label><input id="cp" name="pin" inputmode="numeric"><label for="cc">Dinero inicial de la caja (opcional)</label><input id="cc" name="caja" inputmode="numeric" data-fmt placeholder="1.000.000">
     <button class="btn" type="submit">Crear cobrador</button></form><p class="small" style="margin-top:14px">Con ese usuario y esa clave el cobrador entra desde su celular.</p></main>` + navHTML(NAV_A, 'a_nuevo');
   },
   a_backup() {
-    return `<header class="top"><div><small>Administrador</small><strong>Copia de seguridad</strong></div></header><main class="pad"><div class="card">Descarga un archivo de Excel con todos los cobradores, deudores, préstamos y movimientos.</div><button class="btn" data-act="backup">${ic('down', 20)} Descargar Excel</button><div class="small" id="bst" style="margin-top:10px"></div></main>` + navHTML(NAV_A, 'a_backup');
+    return `<header class="top"><div class="lg">${LOGO(36)}<div><small>Administrador</small><strong>Copia de seguridad</strong></div></div></header><main class="pad"><div class="card">Descarga un archivo de Excel con todos los cobradores, deudores, préstamos y movimientos.</div><button class="btn" data-act="backup">${ic('down', 20)} Descargar Excel</button><div class="small" id="bst" style="margin-top:10px"></div></main>` + navHTML(NAV_A, 'a_backup');
   },
   a_perfil() {
-    return `<header class="top"><div><small>Administrador</small><strong>Mi perfil</strong></div></header><main class="pad"><div class="card">${kv('Correo', esc(S.user.email))}</div>${formClave()}<button class="btn red" data-act="salir">${ic('out', 20)} Cerrar sesión</button></main>` + navHTML(NAV_A, 'a_perfil');
+    return `<header class="top"><div class="lg">${LOGO(36)}<div><small>Administrador</small><strong>Mi perfil</strong></div></div></header><main class="pad"><div class="card">${kv('Correo', esc(S.user.email))}</div>${formClave()}<button class="btn red" data-act="salir">${ic('out', 20)} Cerrar sesión</button></main>` + navHTML(NAV_A, 'a_perfil');
   }
 };
 function formClave() {
@@ -443,14 +480,15 @@ const A = {
   anio(t) { return run(null, async () => { await cargarAnio(parseInt(t.value, 10)); render(); }); },
   refrescar(t) {
     return run(t, async () => {
-      if (S.rol === 'admin') { await cargarAdmin(); go('a_resumen'); }
-      else { await cargarCobrador(); go('c_inicio'); }
+      if (S.rol === 'admin') { await cargarAdmin(); S.stale = false; go('a_resumen'); }
+      else { await cargarCobrador(); S.stale = false; go('c_inicio'); }
       toast('Actualizado');
     });
   },
   cob(t) { return abrirCob(t.dataset.id); },
   salir() { return signOut(auth); },
   activo(t) {
+    if (S.stale) return toast('Espera un momento, estoy actualizando los datos', 'err');
     return run(t, async () => {
       const c = S.cobradores.find(x => x.id === t.dataset.id);
       const nuevo = c.activo === false;
@@ -644,7 +682,20 @@ async function respaldo() {
   try { await cargarScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'); }
   catch (e) { st.textContent = ''; return toast('No se pudo cargar el generador de Excel. Revisa tu internet.', 'err'); }
   const wb = window.XLSX.utils.book_new();
-  Object.keys(hojas).forEach(n => window.XLSX.utils.book_append_sheet(wb, window.XLSX.utils.json_to_sheet(hojas[n]), n));
+  const X = window.XLSX, enMiles = new Set(['capital', 'interes', 'monto', 'efecto']);
+  Object.keys(hojas).forEach(n => {
+    const ws = X.utils.json_to_sheet(hojas[n]);
+    if (ws['!ref']) {
+      const rg = X.utils.decode_range(ws['!ref']);
+      for (let c = rg.s.c; c <= rg.e.c; c++) {
+        const h = ws[X.utils.encode_cell({ r: 0, c })];
+        if (!h || !enMiles.has(h.v)) continue;
+        for (let r = 1; r <= rg.e.r; r++) { const cell = ws[X.utils.encode_cell({ r, c })]; if (cell && cell.t === 'n') cell.z = '#,##0'; }
+      }
+      ws['!cols'] = Array.from({ length: rg.e.c - rg.s.c + 1 }, () => ({ wch: 18 }));
+    }
+    X.utils.book_append_sheet(wb, ws, n);
+  });
   const h = new Date(), p2 = n => String(n).padStart(2, '0');
   window.XLSX.writeFile(wb, `respaldo-cartera-${h.getFullYear()}-${p2(h.getMonth() + 1)}-${p2(h.getDate())}.xlsx`);
   st.textContent = 'Listo. El archivo quedó en tus descargas.';
@@ -663,34 +714,84 @@ document.addEventListener('change', e => {
 document.addEventListener('submit', e => {
   e.preventDefault();
   const f = e.target, fn = F[f.dataset.form];
+  if (S.stale && f.dataset.form !== 'login') return toast('Espera un momento, estoy actualizando los datos', 'err');
   if (fn) { const r = fn(f, e); if (r && r.catch) r.catch(err => { console.error(err); toast(msgErr(err), 'err'); }); }
 });
+function fmtInput(el) {
+  const pos = el.selectionStart == null ? el.value.length : el.selectionStart;
+  const antes = el.value.slice(0, pos).replace(/\D/g, '').length;
+  const out = el.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  if (out === el.value) return;
+  el.value = out;
+  let n = 0, i = 0;
+  for (; i < out.length && n < antes; i++) if (/\d/.test(out[i])) n++;
+  try { el.setSelectionRange(i, i); } catch (_) {}
+}
 document.addEventListener('input', e => {
+  if (e.target.dataset && e.target.dataset.fmt !== undefined) fmtInput(e.target);
   const f = e.target.closest('form');
   if (f && f.dataset.live && L[f.dataset.live]) L[f.dataset.live](f);
 });
 
+function iconoPNG(s, sinBordes) {
+  const c = document.createElement('canvas'); c.width = c.height = s;
+  const x = c.getContext('2d');
+  x.fillStyle = '#1E7B4A';
+  if (sinBordes) x.fillRect(0, 0, s, s);
+  else {
+    const r = s * 0.28;
+    x.beginPath(); x.moveTo(r, 0); x.arcTo(s, 0, s, s, r); x.arcTo(s, s, 0, s, r); x.arcTo(0, s, 0, 0, r); x.arcTo(0, 0, s, 0, r); x.closePath(); x.fill();
+  }
+  x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'alphabetic';
+  x.font = '700 ' + Math.round(s * (sinBordes ? 0.5 : 0.68)) + 'px system-ui,-apple-system,Roboto,sans-serif';
+  x.fillText('$', s / 2, s * (sinBordes ? 0.67 : 0.72));
+  return c.toDataURL('image/png');
+}
+try {
+  const i192 = iconoPNG(192), i512 = iconoPNG(512), iM = iconoPNG(512, true);
+  document.getElementById('fav').href = i192;
+  const t = document.createElement('link'); t.rel = 'apple-touch-icon'; t.href = i192; document.head.appendChild(t);
+  const base = location.origin + location.pathname.replace(/[^/]*$/, '');
+  const man = { name: 'Cartera', short_name: 'Cartera', lang: 'es', start_url: base, scope: base, display: 'standalone', background_color: '#F4F8F5', theme_color: '#0E4D2E',
+    icons: [{ src: i192, sizes: '192x192', type: 'image/png', purpose: 'any' }, { src: i512, sizes: '512x512', type: 'image/png', purpose: 'any' }, { src: iM, sizes: '512x512', type: 'image/png', purpose: 'maskable' }] };
+  const m = document.createElement('link'); m.rel = 'manifest'; m.href = URL.createObjectURL(new Blob([JSON.stringify(man)], { type: 'application/manifest+json' })); document.head.appendChild(m);
+} catch (_) {}
+
 async function fallo(msg) { S.loginError = msg; await signOut(auth); }
 
 onAuthStateChanged(auth, async u => {
-  if (!u) { S.user = null; S.rol = null; go('login'); return; }
+  if (!u) { limpiarCache(); S.user = null; S.rol = null; S.stale = false; go('login'); return; }
   S.user = u;
-  $('#app').innerHTML = '<div class="splash">Cargando…</div>';
+  const esAdmin = (u.email || '').toLowerCase() === ADMIN_EMAIL;
+  const vista = esAdmin ? 'a_resumen' : 'c_inicio';
+  const c = leer(u.uid);
+  let rapido = false;
+  if (c && c.rol === (esAdmin ? 'admin' : 'cobrador')) {
+    rapido = true; S.stale = true; S.rol = c.rol;
+    if (esAdmin) { S.nombre = 'Administrador'; S.cobradores = c.cobradores; }
+    else { S.cid = c.cid; S.nombre = c.nombre; S.caja = c.caja; S.prestamos = c.prestamos; }
+    go(vista);
+  } else {
+    $('#app').innerHTML = '<div class="splash">Cargando…</div>';
+  }
   try {
-    if ((u.email || '').toLowerCase() === ADMIN_EMAIL) {
+    if (esAdmin) {
       S.rol = 'admin'; S.nombre = 'Administrador';
-      await cargarAdmin(); go('a_resumen');
+      await cargarAdmin();
     } else {
       const us = await getDoc(doc(db, 'users', u.uid));
       if (!us.exists()) return fallo('Tu usuario todavía no está configurado. Avisa al administrador.');
       const d = us.data();
       if (d.activo === false) return fallo('Tu cuenta está desactivada. Habla con el administrador.');
       S.rol = 'cobrador'; S.cid = d.cobradorId; S.nombre = d.nombre;
-      await cargarCobrador(); go('c_inicio');
+      await cargarCobrador();
     }
+    S.stale = false;
+    if (!rapido || S.view === vista) go(vista);
   } catch (e) {
     console.error(e);
-    fallo('No se pudo cargar tu información. Revisa tu internet e intenta de nuevo.');
+    if (rapido) toast('Sin conexión: te muestro los últimos datos guardados', 'err');
+    else fallo('No se pudo cargar tu información. Revisa tu internet e intenta de nuevo.');
   }
 });
 </script>
