@@ -86,6 +86,12 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--v);outline-offse
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;background:var(--tx);color:#fff;padding:12px 18px;border-radius:12px;font-size:15px;max-width:90%;z-index:9}
 .toast.err{background:var(--rojo)}
 .small{font-size:13px;color:var(--tx2)}
+.kpi.gas{background:#FAECE7}.kpi.gas b{color:#993C1D}
+.ov{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:20px;z-index:20}
+.modal{background:var(--w);border-radius:16px;padding:22px;width:100%;max-width:320px;text-align:center}
+.modal h3{margin:10px 0 6px;font-size:18px}
+.modal p{color:var(--tx2);margin:0 0 6px;font-size:15px}
+.modal .btn{margin-top:10px}
 a{color:var(--v)}
 @media (prefers-reduced-motion:no-preference){.opt,.row,.btn{transition:background .15s,border-color .15s}}
 </style>
@@ -323,8 +329,10 @@ const V = {
   },
   c_gastos() {
     const g = S.params.gastos;
-    const lista = g === undefined ? '<div class="small">Cargando…</div>' : g.length ? g.map(m => `<div class="card" style="padding:10px 14px"><div class="kv"><span>${esc(m.nota || 'Gasto')}</span><span>${money(m.monto)}</span></div><div class="small">${esc(fmtFH(m.fecha))}</div></div>`).join('') : '<div class="small">Aún no registras gastos.</div>';
-    return cajaBar() + `<main class="pad"><h2 style="margin-top:4px">Registrar gasto</h2>
+    const lista = g === undefined ? '<div class="small">Cargando…</div>' : g.length ? g.map(m => `<div class="card" style="padding:10px 14px;border-color:#F5C4B3"><div class="kv"><span>${esc(m.nota || 'Gasto')}</span><span style="color:#993C1D;font-weight:600">${money(-m.monto)}</span></div><div class="small">${esc(fmtFH(m.fecha))}</div></div>`).join('') : '<div class="small">Aún no registras gastos.</div>';
+    const P = S.params, enPrest = S.prestamos.reduce((a, p) => a + p.capital, 0);
+    const kp = `<div class="kpis"><div class="kpi"><small>Total en caja</small><b>${money(S.caja)}</b></div><div class="kpi"><small>En préstamo</small><b>${money(enPrest)}</b></div><div class="kpi"><small>Intereses recaudados</small><b>${P.intereses === undefined ? '…' : money(P.intereses)}</b></div><div class="kpi gas"><small>Total gastos</small><b>${P.totalGastos === undefined ? '…' : money(-P.totalGastos)}</b></div></div>`;
+    return cajaBar() + `<main class="pad">${kp}<h2>Registrar gasto</h2>
     <form data-form="gasto" autocomplete="off">
       <label>Concepto</label><div class="chips" id="chips"><button type="button" class="chip" data-act="chip" data-c="Gasolina">Gasolina</button><button type="button" class="chip" data-act="chip" data-c="Plan de datos">Plan de datos</button><button type="button" class="chip" data-act="chip" data-c="Otro">Otro</button></div>
       <input type="hidden" name="concepto" id="concepto">
@@ -385,7 +393,7 @@ const V = {
     <button class="btn" type="submit">Crear cobrador</button></form><p class="small" style="margin-top:14px">Con ese usuario y esa clave el cobrador entra desde su celular.</p></main>` + navHTML(NAV_A, 'a_nuevo');
   },
   a_backup() {
-    return `<header class="top"><div class="lg">${LOGO(36)}<div><small>Administrador</small><strong>Copia de seguridad</strong></div></div></header><main class="pad"><div class="card">Descarga un archivo de Excel con todos los cobradores, deudores, préstamos y movimientos.</div><button class="btn" data-act="backup">${ic('down', 20)} Descargar Excel</button><div class="small" id="bst" style="margin-top:10px"></div></main>` + navHTML(NAV_A, 'a_backup');
+    return `<header class="top"><div class="lg">${LOGO(36)}<div><small>Administrador</small><strong>Copia de seguridad</strong></div></div></header><main class="pad"><div class="card">Descarga un Excel con colores: resumen, préstamos (con tasa e interés), pagos, gastos e historial por mes.</div><button class="btn" data-act="backup">${ic('down', 20)} Descargar Excel</button><div class="small" id="bst" style="margin-top:10px"></div></main>` + navHTML(NAV_A, 'a_backup');
   },
   a_perfil() {
     return `<header class="top"><div class="lg">${LOGO(36)}<div><small>Administrador</small><strong>Mi perfil</strong></div></div></header><main class="pad"><div class="card">${kv('Correo', esc(S.user.email))}</div>${formClave()}<button class="btn red" data-act="salir">${ic('out', 20)} Cerrar sesión</button></main>` + navHTML(NAV_A, 'a_perfil');
@@ -426,10 +434,24 @@ async function cargarAnio(y) {
   });
   S.params.res = r;
 }
+async function interesesCobrados(cid) {
+  const q = query(col(cid, 'movimientos'), where('tipo', 'in', ['pago_total', 'renovacion']));
+  try {
+    const r = await getAggregateFromServer(q, { t: sum('interes') });
+    return r.data().t || 0;
+  } catch (e) {
+    const s = await getDocs(q);
+    let t = 0; s.forEach(d => t += d.data().interes || 0);
+    return t;
+  }
+}
 async function abrirGastos() {
   S.params = {}; S.view = 'c_gastos'; render();
-  const s = await getDocs(query(col(S.cid, 'movimientos'), where('tipo', '==', 'gasto')));
-  S.params.gastos = s.docs.map(d => d.data()).sort((a, b) => b.fecha.toMillis() - a.fecha.toMillis()).slice(0, 30);
+  const [s, ti] = await Promise.all([getDocs(query(col(S.cid, 'movimientos'), where('tipo', '==', 'gasto'))), interesesCobrados(S.cid).catch(() => 0)]);
+  const todos = s.docs.map(d => d.data());
+  S.params.totalGastos = todos.reduce((a, m) => a + (m.monto || 0), 0);
+  S.params.intereses = ti;
+  S.params.gastos = todos.sort((a, b) => b.fecha.toMillis() - a.fecha.toMillis()).slice(0, 30);
   if (S.view === 'c_gastos') render();
 }
 async function abrirDet(id) {
@@ -486,7 +508,8 @@ const A = {
     });
   },
   cob(t) { return abrirCob(t.dataset.id); },
-  salir() { return signOut(auth); },
+  salir() { quitarAviso(); return signOut(auth); },
+  seguir() { ultimaAct = Date.now(); quitarAviso(); },
   activo(t) {
     if (S.stale) return toast('Espera un momento, estoy actualizando los datos', 'err');
     return run(t, async () => {
@@ -666,19 +689,158 @@ const L = {
 function cargarScript(src) {
   return new Promise((ok, fail) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = fail; document.head.appendChild(s); });
 }
+const XT = { verde: 'FF0F6E56', blanco: 'FFFFFFFF', menta: 'FFE1F5EE', mentaT: 'FF04342C', mentaF: 'FF9FE1CB', rojoB: 'FFFCEBEB', rojoT: 'FF791F1F', nar: 'FFFAECE7', narT: 'FF712B13', narF: 'FFF5C4B3', narFT: 'FF4A1B0C', borde: 'FFB4B2A9', txt: 'FF2C2C2A' };
+const XB = { top: { style: 'thin', color: { argb: XT.borde } }, left: { style: 'thin', color: { argb: XT.borde } }, bottom: { style: 'thin', color: { argb: XT.borde } }, right: { style: 'thin', color: { argb: XT.borde } } };
+const XM = '"$"#,##0;-"$"#,##0', XF = 'dd/mm/yyyy', XFH = 'dd/mm/yyyy hh:mm';
+const XH = { bg: XT.verde, fg: XT.blanco, b: true };
+const xd = d => d ? new Date(d.getTime() - d.getTimezoneOffset() * 60000) : null;
+const xZebra = (_, i) => i % 2 === 0 ? { bg: XT.menta, fg: XT.mentaT } : { bg: XT.blanco, fg: XT.txt };
+function xPintar(cell, bg, fg, bold) {
+  cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+  cell.font = { name: 'Calibri', size: 11, color: { argb: fg }, bold: !!bold };
+  cell.border = XB;
+}
+function xFila(ws, vals, e, fmts) {
+  const r = ws.addRow(vals);
+  vals.forEach((_, j) => { const c = r.getCell(j + 1); xPintar(c, e.bg, e.fg, e.b); if (fmts && fmts[j]) c.numFmt = fmts[j]; });
+  return r;
+}
+function xHoja(wb, nombre, cols, filas, estilo, total) {
+  const ws = wb.addWorksheet(nombre, { views: [{ state: 'frozen', ySplit: 1 }] });
+  ws.columns = cols.map(c => ({ width: c.w || 16 }));
+  xFila(ws, cols.map(c => c.h), XH).height = 22;
+  filas.forEach((f, i) => xFila(ws, cols.map(c => f[c.k]), estilo(f, i), cols.map(c => typeof c.fmt === 'function' ? c.fmt(f) : c.fmt)));
+  if (total) xFila(ws, cols.map(c => total.d[c.k] === undefined ? '' : total.d[c.k]), total.e, cols.map(c => c.fmt));
+  if (filas.length) ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: cols.length } };
+  return ws;
+}
+function armarExcel(EJ, cobs, deus, pres, movs) {
+  const wb = new EJ.Workbook(), hoy = hoy0();
+  const esPI = t => t === 'pago_total' || t === 'renovacion';
+  const nomT = t => ({ prestamo: 'Préstamo entregado', pago_total: 'Pago total', renovacion: 'Renovación', gasto: 'Gasto', asignacion: 'Dinero asignado', retiro: 'Dinero retirado' }[t] || t);
+  const suma = (a, f) => a.reduce((s, x) => s + (f(x) || 0), 0);
+  const porFechaDesc = (a, b) => (b.fecha || 0) - (a.fecha || 0);
+
+  const porCob = cobs.map(c => {
+    const m = movs.filter(x => x.cid === c.id), p = pres.filter(x => x.cid === c.id && x.estado === 'activo');
+    return { nombre: c.nombre, caja: suma(m, x => x.efecto), prest: suma(p, x => x.capital), int: suma(m.filter(x => esPI(x.tipo)), x => x.interes), gas: suma(m.filter(x => x.tipo === 'gasto'), x => x.monto) };
+  });
+  const T = { caja: suma(porCob, x => x.caja), prest: suma(porCob, x => x.prest), int: suma(porCob, x => x.int), gas: suma(porCob, x => x.gas) };
+
+  const rs = wb.addWorksheet('Resumen');
+  rs.columns = [{ width: 30 }, { width: 18 }, { width: 18 }, { width: 24 }, { width: 18 }];
+  xFila(rs, ['Concepto', 'Valor (COP)'], XH);
+  xFila(rs, ['Total en caja', T.caja], { bg: XT.menta, fg: XT.mentaT }, [null, XM]);
+  xFila(rs, ['Total en préstamo', T.prest], { bg: XT.blanco, fg: XT.txt }, [null, XM]);
+  xFila(rs, ['Intereses recaudados', T.int], { bg: XT.menta, fg: XT.mentaT }, [null, XM]);
+  xFila(rs, ['Total gastos', -T.gas], { bg: XT.nar, fg: XT.narT, b: true }, [null, XM]);
+  rs.addRow([]);
+  xFila(rs, ['Cobrador', 'Caja', 'En préstamo', 'Intereses recaudados', 'Gastos'], XH);
+  porCob.forEach((c, i) => {
+    const r = xFila(rs, [c.nombre, c.caja, c.prest, c.int, -c.gas], xZebra(null, i), [null, XM, XM, XM, XM]);
+    xPintar(r.getCell(5), XT.nar, XT.narT, false); r.getCell(5).numFmt = XM;
+  });
+  rs.addRow([]);
+  rs.addRow(['Generado el ' + new Date().toLocaleString('es-CO')]).getCell(1).font = { italic: true, color: { argb: 'FF5F5E5A' } };
+
+  const estP = p => p.estado === 'pagado' ? 'Pagado' : (p.vence && p.vence < hoy ? 'En mora' : 'Al día');
+  const filasP = pres.map(p => ({ ...p, est: estP(p), total: (p.capital || 0) + (p.interes || 0), ini: xd(p.inicio), ven: xd(p.vence) }))
+    .sort((a, b) => a.cobrador.localeCompare(b.cobrador) || (a.vence || 0) - (b.vence || 0));
+  xHoja(wb, 'Préstamos', [
+    { h: 'Cobrador', k: 'cobrador', w: 16 }, { h: 'Deudor', k: 'deudor', w: 22 }, { h: 'Celular', k: 'celular', w: 14 },
+    { h: 'Monto', k: 'capital', w: 14, fmt: XM }, { h: 'Tasa', k: 'tasa', w: 8, fmt: f => Number.isInteger(f.tasa) ? '0"%"' : '0.0#"%"' },
+    { h: 'Interés', k: 'interes', w: 14, fmt: XM }, { h: 'Total a cobrar', k: 'total', w: 16, fmt: XM },
+    { h: 'Plazo (días)', k: 'plazo', w: 12 }, { h: 'Inicio', k: 'ini', w: 12, fmt: XF }, { h: 'Vence', k: 'ven', w: 12, fmt: XF },
+    { h: 'Estado', k: 'est', w: 11 }, { h: 'Ciclos', k: 'ciclos', w: 8 }, { h: 'Observaciones', k: 'observaciones', w: 36 }
+  ], filasP, f => f.est === 'En mora' ? { bg: XT.rojoB, fg: XT.rojoT } : f.est === 'Pagado' ? { bg: XT.menta, fg: XT.mentaT } : { bg: XT.blanco, fg: XT.txt });
+
+  const filasPagos = movs.filter(m => esPI(m.tipo)).sort(porFechaDesc).map(m => ({ f: xd(m.fecha), cobrador: m.cobrador, deudor: m.deudor, tipo: nomT(m.tipo), total: m.monto, interes: m.interes, capital: m.tipo === 'pago_total' ? m.monto - m.interes : 0, nota: m.nota }));
+  xHoja(wb, 'Pagos', [
+    { h: 'Fecha', k: 'f', w: 17, fmt: XFH }, { h: 'Cobrador', k: 'cobrador', w: 16 }, { h: 'Deudor', k: 'deudor', w: 22 }, { h: 'Tipo', k: 'tipo', w: 14 },
+    { h: 'Total cobrado', k: 'total', w: 16, fmt: XM }, { h: 'Interés', k: 'interes', w: 14, fmt: XM }, { h: 'Capital', k: 'capital', w: 14, fmt: XM }, { h: 'Observaciones', k: 'nota', w: 36 }
+  ], filasPagos, xZebra);
+
+  const gastos = movs.filter(m => m.tipo === 'gasto').sort(porFechaDesc);
+  xHoja(wb, 'Gastos', [
+    { h: 'Fecha', k: 'f', w: 17, fmt: XFH }, { h: 'Cobrador', k: 'cobrador', w: 16 }, { h: 'Detalle', k: 'nota', w: 34 }, { h: 'Valor', k: 'v', w: 16, fmt: XM }
+  ], gastos.map(m => ({ f: xd(m.fecha), cobrador: m.cobrador, nota: m.nota, v: -m.monto })), (f, i) => ({ bg: i % 2 === 0 ? XT.nar : XT.blanco, fg: XT.narT }),
+  { d: { nota: 'Total', v: -T.gas }, e: { bg: XT.narF, fg: XT.narFT, b: true } });
+
+  const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  const grupos = {};
+  movs.forEach(m => {
+    if (!m.fecha) return;
+    const y = m.fecha.getFullYear(), mes = m.fecha.getMonth(), k = y * 100 + mes;
+    const g = grupos[k] || (grupos[k] = { anio: y, mes: MESES[mes], prest: 0, cob: 0, int: 0, gas: 0 });
+    if (m.tipo === 'prestamo') g.prest += m.monto;
+    else if (m.tipo === 'gasto') g.gas += m.monto;
+    else if (esPI(m.tipo)) { g.cob += m.monto; g.int += m.interes; }
+  });
+  const filasH = Object.keys(grupos).map(Number).sort((a, b) => a - b).map(k => { const g = grupos[k]; return { ...g, util: g.int - g.gas }; });
+  xHoja(wb, 'Historial anual', [
+    { h: 'Año', k: 'anio', w: 8 }, { h: 'Mes', k: 'mes', w: 14 }, { h: 'Prestado', k: 'prest', w: 16, fmt: XM }, { h: 'Cobrado', k: 'cob', w: 16, fmt: XM },
+    { h: 'Intereses', k: 'int', w: 16, fmt: XM }, { h: 'Gastos', k: 'gas', w: 16, fmt: XM }, { h: 'Utilidad', k: 'util', w: 16, fmt: XM }
+  ], filasH.map(g => ({ ...g, gas: -g.gas })), xZebra,
+  { d: { mes: 'Total', prest: suma(filasH, g => g.prest), cob: suma(filasH, g => g.cob), int: suma(filasH, g => g.int), gas: -suma(filasH, g => g.gas), util: suma(filasH, g => g.util) }, e: { bg: XT.mentaF, fg: XT.mentaT, b: true } });
+
+  xHoja(wb, 'Movimientos', [
+    { h: 'Fecha', k: 'f', w: 17, fmt: XFH }, { h: 'Cobrador', k: 'cobrador', w: 16 }, { h: 'Tipo', k: 't', w: 20 }, { h: 'Deudor', k: 'deudor', w: 22 },
+    { h: 'Monto', k: 'monto', w: 14, fmt: XM }, { h: 'Efecto en caja', k: 'efecto', w: 16, fmt: XM }, { h: 'Interés', k: 'interes', w: 14, fmt: XM }, { h: 'Nota', k: 'nota', w: 36 }
+  ], movs.slice().sort(porFechaDesc).map(m => ({ ...m, f: xd(m.fecha), t: nomT(m.tipo) })), (f, i) => f.tipo === 'gasto' ? { bg: XT.nar, fg: XT.narT } : xZebra(f, i));
+
+  xHoja(wb, 'Deudores', [
+    { h: 'Cobrador', k: 'cobrador', w: 16 }, { h: 'Nombre', k: 'nombre', w: 24 }, { h: 'Celular', k: 'celular', w: 14 }, { h: 'Observaciones', k: 'observaciones', w: 40 }
+  ], deus, xZebra);
+
+  xHoja(wb, 'Cobradores', [
+    { h: 'Nombre', k: 'nombre', w: 22 }, { h: 'Usuario', k: 'usuario', w: 16 }, { h: 'Activo', k: 'act', w: 9 }, { h: 'Creado', k: 'cre', w: 17, fmt: XFH }, { h: 'Caja actual', k: 'caja', w: 16, fmt: XM }
+  ], cobs.map(c => ({ ...c, act: c.activo ? 'Sí' : 'No', cre: xd(c.creado), caja: (porCob.find(p => p.nombre === c.nombre) || {}).caja || 0 })),
+  (f, i) => f.activo ? xZebra(f, i) : { bg: XT.rojoB, fg: XT.rojoT });
+  return wb;
+}
+async function cargarExcelJS() {
+  if (window.ExcelJS) return window.ExcelJS;
+  for (const u of ['https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js', 'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js']) {
+    try { await cargarScript(u); if (window.ExcelJS) return window.ExcelJS; } catch (_) {}
+  }
+  return null;
+}
+function descargar(blob, nombre) {
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = nombre; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 15000);
+}
 async function respaldo() {
   const st = $('#bst'); st.textContent = 'Reuniendo datos…';
-  const hojas = { Cobradores: [], Deudores: [], Prestamos: [], Movimientos: [] };
+  const cobs = [], deus = [], pres = [], movs = [];
+  const aD = t => t && t.toDate ? t.toDate() : null;
   const cs = await getDocs(collection(db, 'carteras'));
   for (const c of cs.docs) {
-    const cd = c.data();
-    hojas.Cobradores.push({ id: c.id, nombre: cd.nombre, usuario: cd.usuario, activo: cd.activo === false ? 'no' : 'si', creado: fmtFH(cd.creado) });
+    const cd = c.data(), nombre = cd.nombre || '';
+    cobs.push({ id: c.id, nombre, usuario: cd.usuario, activo: cd.activo !== false, creado: aD(cd.creado) });
     const [d, p, m] = await Promise.all(['deudores', 'prestamos', 'movimientos'].map(n => getDocs(col(c.id, n))));
-    d.forEach(x => { const v = x.data(); hojas.Deudores.push({ cobrador: cd.nombre, nombre: v.nombre, celular: v.celular, observaciones: v.observaciones || '' }); });
-    p.forEach(x => { const v = x.data(); hojas.Prestamos.push({ cobrador: cd.nombre, deudor: v.deudorNombre, celular: v.celular, capital: v.capital, tasa: v.tasa, interes: v.interes, plazo: v.plazo, inicio: fmtFH(v.inicio), vence: fmtFH(v.vence), estado: v.estado, ciclos: v.ciclos || 1, observaciones: v.observaciones || '' }); });
-    m.forEach(x => { const v = x.data(); hojas.Movimientos.push({ cobrador: cd.nombre, fecha: fmtFH(v.fecha), tipo: v.tipo, deudor: v.deudorNombre || '', monto: v.monto, efecto: v.efecto, interes: v.interes || '', nota: v.nota || '' }); });
+    d.forEach(x => { const v = x.data(); deus.push({ cobrador: nombre, nombre: v.nombre, celular: v.celular, observaciones: v.observaciones || '' }); });
+    p.forEach(x => { const v = x.data(); pres.push({ cid: c.id, cobrador: nombre, deudor: v.deudorNombre, celular: v.celular, capital: v.capital || 0, tasa: v.tasa || 0, interes: v.interes || 0, plazo: v.plazo, inicio: aD(v.inicio), vence: aD(v.vence), estado: v.estado, ciclos: v.ciclos || 1, observaciones: v.observaciones || '' }); });
+    m.forEach(x => { const v = x.data(); movs.push({ cid: c.id, cobrador: nombre, fecha: aD(v.fecha), tipo: v.tipo, deudor: v.deudorNombre || '', monto: v.monto || 0, efecto: v.efecto || 0, interes: v.interes || 0, nota: v.nota || '' }); });
   }
   st.textContent = 'Generando el archivo…';
+  const h = new Date(), p2 = n => String(n).padStart(2, '0');
+  const archivo = `respaldo-cartera-${h.getFullYear()}-${p2(h.getMonth() + 1)}-${p2(h.getDate())}.xlsx`;
+  const EJ = await cargarExcelJS();
+  if (EJ) {
+    const wb = armarExcel(EJ, cobs, deus, pres, movs);
+    const buf = await wb.xlsx.writeBuffer();
+    descargar(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), archivo);
+    st.textContent = 'Listo. El archivo quedó en tus descargas.';
+    return;
+  }
+  const f = d => d ? d.toLocaleString('es-CO') : '';
+  const hojas = {
+    Cobradores: cobs.map(c => ({ id: c.id, nombre: c.nombre, usuario: c.usuario, activo: c.activo ? 'si' : 'no', creado: f(c.creado) })),
+    Deudores: deus,
+    Prestamos: pres.map(p => ({ cobrador: p.cobrador, deudor: p.deudor, celular: p.celular, capital: p.capital, tasa: p.tasa, interes: p.interes, plazo: p.plazo, inicio: f(p.inicio), vence: f(p.vence), estado: p.estado, ciclos: p.ciclos, observaciones: p.observaciones })),
+    Movimientos: movs.map(m => ({ cobrador: m.cobrador, fecha: f(m.fecha), tipo: m.tipo, deudor: m.deudor, monto: m.monto, efecto: m.efecto, interes: m.interes, nota: m.nota }))
+  };
   try { await cargarScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'); }
   catch (e) { st.textContent = ''; return toast('No se pudo cargar el generador de Excel. Revisa tu internet.', 'err'); }
   const wb = window.XLSX.utils.book_new();
@@ -688,17 +850,16 @@ async function respaldo() {
     if (ws['!ref']) {
       const rg = X.utils.decode_range(ws['!ref']);
       for (let c = rg.s.c; c <= rg.e.c; c++) {
-        const h = ws[X.utils.encode_cell({ r: 0, c })];
-        if (!h || !enMiles.has(h.v)) continue;
+        const hd = ws[X.utils.encode_cell({ r: 0, c })];
+        if (!hd || !enMiles.has(hd.v)) continue;
         for (let r = 1; r <= rg.e.r; r++) { const cell = ws[X.utils.encode_cell({ r, c })]; if (cell && cell.t === 'n') cell.z = '#,##0'; }
       }
       ws['!cols'] = Array.from({ length: rg.e.c - rg.s.c + 1 }, () => ({ wch: 18 }));
     }
     X.utils.book_append_sheet(wb, ws, n);
   });
-  const h = new Date(), p2 = n => String(n).padStart(2, '0');
-  window.XLSX.writeFile(wb, `respaldo-cartera-${h.getFullYear()}-${p2(h.getMonth() + 1)}-${p2(h.getDate())}.xlsx`);
-  st.textContent = 'Listo. El archivo quedó en tus descargas.';
+  window.XLSX.writeFile(wb, archivo);
+  st.textContent = 'Listo. Se descargó el Excel sencillo, sin colores, porque no cargó el generador con colores.';
 }
 
 document.addEventListener('click', e => {
@@ -757,11 +918,33 @@ try {
   const m = document.createElement('link'); m.rel = 'manifest'; m.href = URL.createObjectURL(new Blob([JSON.stringify(man)], { type: 'application/manifest+json' })); document.head.appendChild(m);
 } catch (_) {}
 
+const INACT_MIN = 5, AVISO_SEG = 30;
+let ultimaAct = Date.now();
+function quitarAviso() { const o = $('#aviso'); if (o) o.remove(); }
+function mostrarAviso(seg) {
+  let o = $('#aviso');
+  if (!o) {
+    o = document.createElement('div');
+    o.id = 'aviso'; o.className = 'ov';
+    o.setAttribute('role', 'alertdialog'); o.setAttribute('aria-modal', 'true');
+    o.innerHTML = `<div class="modal"><div class="av" style="margin:0 auto">${ic('clock', 24)}</div><h3>¿Sigues ahí?</h3><p>Por seguridad, cerraremos tu sesión en <b id="avseg"></b> por inactividad.</p><button class="btn" data-act="seguir">Seguir en la app</button><button class="btn sec" data-act="salir">Cerrar sesión</button></div>`;
+    document.body.appendChild(o);
+  }
+  $('#avseg').textContent = seg + ' s';
+}
+['click', 'keydown', 'touchstart', 'scroll', 'input'].forEach(ev => document.addEventListener(ev, () => { if (!$('#aviso')) ultimaAct = Date.now(); }, { passive: true, capture: true }));
+setInterval(() => {
+  if (!S.user) { quitarAviso(); ultimaAct = Date.now(); return; }
+  const idle = Date.now() - ultimaAct, limite = INACT_MIN * 60000, tope = limite + AVISO_SEG * 1000;
+  if (idle >= tope) { quitarAviso(); S.loginError = 'Tu sesión se cerró por inactividad.'; signOut(auth); }
+  else if (idle >= limite) mostrarAviso(Math.ceil((tope - idle) / 1000));
+}, 1000);
+
 async function fallo(msg) { S.loginError = msg; await signOut(auth); }
 
 onAuthStateChanged(auth, async u => {
-  if (!u) { limpiarCache(); S.user = null; S.rol = null; S.stale = false; go('login'); return; }
-  S.user = u;
+  if (!u) { quitarAviso(); limpiarCache(); S.user = null; S.rol = null; S.stale = false; go('login'); return; }
+  S.user = u; ultimaAct = Date.now();
   const esAdmin = (u.email || '').toLowerCase() === ADMIN_EMAIL;
   const vista = esAdmin ? 'a_resumen' : 'c_inicio';
   const c = leer(u.uid);
