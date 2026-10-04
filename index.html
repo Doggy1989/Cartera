@@ -87,6 +87,14 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--v);outline-offse
 .toast.err{background:var(--rojo)}
 .small{font-size:13px;color:var(--tx2)}
 .kpi.gas{background:#FAECE7}.kpi.gas b{color:#993C1D}
+.pos{color:var(--v)}.neg{color:var(--rojo)}
+.mv{border-radius:14px;padding:10px 14px;margin-bottom:10px;background:var(--w);border:1px solid var(--bd)}
+.mv.ver{background:var(--vm);border:2px solid var(--v)}
+.mv.roj{background:var(--rojob);border:2px solid var(--rojo)}
+.mv.ver .kv>span:first-child,.mv.ver .small{color:var(--vo)}
+.mv.roj .kv>span:first-child,.mv.roj .small{color:var(--rojo)}
+.mvd{border-top:1px solid rgba(0,0,0,.15);margin-top:8px;padding-top:6px}
+.mvd .kv{padding:3px 0;font-size:14px}
 .ov{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:20px;z-index:20}
 .modal{background:var(--w);border-radius:16px;padding:22px;width:100%;max-width:320px;text-align:center}
 .modal h3{margin:10px 0 6px;font-size:18px}
@@ -254,6 +262,25 @@ const cajaBar = () => `<header class="top"><div class="lg">${LOGO(36)}<div><smal
 const subBar = (t, back) => `<header class="sub"><button data-act="ir" data-v="${back}" aria-label="Volver">${ic('back', 26)}</button><h1>${esc(t)}</h1></header>`;
 const filaP = p => { const e = estadoP(p); return `<button class="row ${e.mora ? 'mora' : ''}" data-act="abrir" data-id="${p.id}"><div class="av">${esc(ini2(p.deudorNombre))}</div><div class="info"><b>${esc(p.deudorNombre)}</b><span>Capital ${money(p.capital)}, tasa ${p.tasa}%</span></div><div class="der"><b>${money(totalP(p))}</b><span>${e.txt}</span></div></button>`; };
 const kv = (a, b) => `<div class="kv"><span>${a}</span><span>${b}</span></div>`;
+const NOM_MOV = { prestamo: 'Préstamo entregado', pago_total: 'Pago total', renovacion: 'Renovación', gasto: 'Gasto', asignacion: 'Recarga de caja', retiro: 'Retiro de caja' };
+function tarjetaMov(m) {
+  const t = m.tipo, clase = t === 'retiro' ? 'roj' : t === 'asignacion' ? 'ver' : '';
+  const color = t === 'gasto' ? 'var(--amb)' : m.efecto < 0 ? 'var(--rojo)' : 'var(--v)';
+  const monto = (m.efecto < 0 ? '-' : '+') + money(Math.abs(m.efecto));
+  const grande = clase ? 'font-size:17px;' : '';
+  let sub = '';
+  if (t === 'pago_total') sub = ' - capital ' + money((m.monto || 0) - (m.interes || 0)) + ' + interés ' + money(m.interes || 0);
+  let det = '';
+  if ((t === 'asignacion' || t === 'retiro') && m.cajaDespues !== undefined) {
+    det = `<div class="mvd">${kv('Caja antes', money(m.cajaAntes))}${kv('Caja después', '<b>' + money(m.cajaDespues) + '</b>')}${kv('Queda en préstamos', '<b>' + money(m.enPrestamos) + '</b>')}${kv('Deudores activos', (m.activos || 0) + ' (' + (m.mora || 0) + ' en mora)')}${t === 'asignacion' ? (m.recargasAcum !== undefined ? kv('Recargas acumuladas', money(m.recargasAcum)) : '') : (m.retirosAcum !== undefined ? kv('Retiros acumulados', money(m.retirosAcum)) : '')}</div>`;
+  }
+  return `<div class="mv ${clase}"><div class="kv"><span style="font-weight:600">${esc(NOM_MOV[t] || t)}${m.deudorNombre ? ' - ' + esc(m.deudorNombre) : ''}</span><span style="color:${color};font-weight:600;${grande}">${monto}</span></div><div class="small">${esc(fmtFH(m.fecha))}${sub}${m.nota ? ' - ' + esc(m.nota) : ''}</div>${det}</div>`;
+}
+const resumenCob = c => {
+  const t = S.params.tot;
+  if (!t) return '';
+  return `<h2>Resumen</h2><div class="kpis"><div class="kpi"><small>En préstamos</small><b>${money(c.calle)}</b></div><div class="kpi"><small>Intereses recaudados</small><b>${money(t.intereses)}</b></div><div class="kpi"><small>Recargas totales</small><b class="pos">+${money(t.recargas)}</b></div><div class="kpi red"><small>Retiros totales</small><b>-${money(t.retiros)}</b></div></div><div class="kpi gas"><small>Gastos del cobrador</small><b>-${money(t.gastos)}</b></div><div class="card" style="margin-top:10px">${kv('Caja + préstamos', '<b>' + money(c.caja + c.calle) + '</b>')}<div class="small">= recargas - retiros - gastos + intereses</div></div>`;
+};
 
 const V = {
   login() {
@@ -302,7 +329,7 @@ const V = {
       ? `Hola ${p.deudorNombre}, tu pago de ${money(totalP(p))} está vencido hace ${-diasA(p.vence)} días. Por favor ponte al día. Gracias.`
       : `Hola ${p.deudorNombre}, te recuerdo que tu pago de ${money(totalP(p))} vence el ${fmtF(p.vence)}. Gracias.`;
     const movs = S.params.movs;
-    const hist = movs === null || movs === undefined ? '<div class="small">Cargando…</div>' : movs.length ? movs.map(m => `<div class="card" style="padding:10px 14px"><div class="kv"><span>${esc(m.tipo === 'prestamo' ? 'Préstamo entregado' : m.tipo === 'pago_total' ? 'Pago total' : 'Renovación')}</span><span>${money(m.monto)}</span></div><div class="small">${esc(fmtFH(m.fecha))}${m.nota ? ' - ' + esc(m.nota) : ''}</div></div>`).join('') : '<div class="small">Sin movimientos.</div>';
+    const hist = movs === null || movs === undefined ? '<div class="small">Cargando…</div>' : movs.length ? movs.map(m => `<div class="card" style="padding:10px 14px"><div class="kv"><span>${esc(m.tipo === 'prestamo' ? 'Préstamo entregado' : m.tipo === 'pago_total' ? 'Pago total' : 'Renovación')}</span><span class="${m.tipo === 'prestamo' ? 'neg' : 'pos'}" style="font-weight:600">${m.tipo === 'prestamo' ? '-' : '+'}${money(m.monto)}</span></div><div class="small">${esc(fmtFH(m.fecha))}${m.nota ? ' - ' + esc(m.nota) : ''}</div></div>`).join('') : '<div class="small">Sin movimientos.</div>';
     return subBar(p.deudorNombre, 'c_inicio') + `<main class="pad"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><b>${esc(p.deudorNombre)}</b><span class="badge ${e.mora ? 'red' : ''}">${e.txt}</span></div>
     <div class="small" style="margin-bottom:6px">${esc(p.celular)}</div>
     ${kv('Capital', money(p.capital))}${kv('Interés (' + p.tasa + '%)', money(p.interes))}${kv('Total a cobrar', '<b>' + money(totalP(p)) + '</b>')}${kv('Plazo', p.plazo + ' días')}${kv('Vence', fmtF(p.vence))}${kv('Ciclos', p.ciclos || 1)}</div>
@@ -348,7 +375,7 @@ const V = {
     let cuerpo = '';
     if (tab === 'pagados') {
       const l = S.params.pagados;
-      cuerpo = l === undefined ? '<div class="small">Cargando…</div>' : l.length ? l.map(p => `<div class="card" style="padding:10px 14px"><div class="kv"><b>${esc(p.deudorNombre)}</b><span>${money(totalP(p))}</span></div><div class="small">Pagado ${p.pagadoEn ? esc(fmtF(p.pagadoEn)) : ''}, capital ${money(p.capital)}</div></div>`).join('') : '<div class="vacio">Aún no hay préstamos pagados.</div>';
+      cuerpo = l === undefined ? '<div class="small">Cargando…</div>' : l.length ? l.map(p => `<div class="card" style="padding:10px 14px"><div class="kv"><b>${esc(p.deudorNombre)}</b><span class="pos" style="font-weight:600">+${money(totalP(p))}</span></div><div class="small">Pagado ${p.pagadoEn ? esc(fmtF(p.pagadoEn)) : ''}, capital ${money(p.capital)}</div></div>`).join('') : '<div class="vacio">Aún no hay préstamos pagados.</div>';
     } else if (tab === 'mora') {
       const l = S.prestamos.filter(p => p.vence < hoy0());
       cuerpo = l.length ? l.map(filaP).join('') : '<div class="vacio">No tienes deudores en mora.</div>';
@@ -378,11 +405,11 @@ const V = {
     if (!c) return subBar('Cobrador', 'a_resumen') + '<main class="pad"><div class="vacio">No se encontró el cobrador.</div></main>';
     const pr = S.params.pr, mv = S.params.mv;
     const lp = pr === undefined ? '<div class="small">Cargando…</div>' : pr.length ? pr.map(p => { const e = estadoP(p); return `<div class="card" style="padding:10px 14px"><div class="kv"><b>${esc(p.deudorNombre)}</b><span>${money(totalP(p))}</span></div><div class="small" style="${e.mora ? 'color:var(--rojo);font-weight:600' : ''}">${e.txt}, tasa ${p.tasa}%</div></div>`; }).join('') : '<div class="small">Sin préstamos activos.</div>';
-    const lm = mv === undefined ? '<div class="small">Cargando…</div>' : mv.length ? mv.map(m => `<div class="card" style="padding:10px 14px"><div class="kv"><span>${esc(m.tipo.replace('_', ' '))}${m.deudorNombre ? ' - ' + esc(m.deudorNombre) : ''}</span><span>${m.efecto < 0 ? '-' : '+'}${money(Math.abs(m.efecto))}</span></div><div class="small">${esc(fmtFH(m.fecha))}${m.nota ? ' - ' + esc(m.nota) : ''}</div></div>`).join('') : '<div class="small">Sin movimientos.</div>';
+    const lm = mv === undefined ? '<div class="small">Cargando…</div>' : mv.length ? mv.map(tarjetaMov).join('') : '<div class="small">Sin movimientos.</div>';
     return subBar(c.nombre, 'a_resumen') + `<main class="pad"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><b>Caja</b><b style="font-size:22px">${money(c.caja)}</b></div>${kv('Usuario', esc(c.usuario))}${kv('Activos', c.activos)}${kv('En mora', c.mora)}${kv('En la calle', money(c.calle))}${kv('Estado', c.activo === false ? '<span class="badge red">Desactivado</span>' : '<span class="badge">Activo</span>')}</div>
-    <form data-form="caja" data-id="${c.id}"><label for="cmonto">Dinero para la caja</label><input id="cmonto" name="monto" inputmode="numeric" data-fmt placeholder="1.000.000"><label for="cnota">Nota (opcional)</label><input id="cnota" name="nota">
-    <div class="two"><button class="btn" type="submit" name="tipo" value="asignacion">Asignar</button><button class="btn sec" type="submit" name="tipo" value="retiro">Retirar</button></div></form>
-    <h2>Préstamos activos</h2>${lp}<h2>Últimos movimientos</h2>${lm}
+    ${resumenCob(c)}<form data-form="caja" data-id="${c.id}"><label for="cmonto">Dinero para la caja</label><input id="cmonto" name="monto" inputmode="numeric" data-fmt placeholder="1.000.000"><label for="cnota">Nota (opcional)</label><input id="cnota" name="nota">
+    <div class="two"><button class="btn" type="submit" name="tipo" value="asignacion">Recargar caja</button><button class="btn red" type="submit" name="tipo" value="retiro">Retirar de la caja</button></div></form>
+    <h2>Préstamos activos</h2>${lp}<h2>Movimientos de la caja</h2>${lm}
     <h2>Acceso</h2><form data-form="reset" data-id="${c.id}"><label for="rpin">Nueva clave (6 números o más)</label><input id="rpin" name="pin" inputmode="numeric"><button class="btn sec" type="submit">Restablecer acceso</button></form>
     <button class="btn ${c.activo === false ? '' : 'red'}" data-act="activo" data-id="${c.id}">${c.activo === false ? 'Activar cobrador' : 'Desactivar cobrador'}</button></main>` + navHTML(NAV_A, 'a_resumen');
   },
@@ -434,6 +461,17 @@ async function cargarAnio(y) {
   });
   S.params.res = r;
 }
+async function sumaTipo(cid, tipo) {
+  const q = query(col(cid, 'movimientos'), where('tipo', '==', tipo));
+  try {
+    const r = await getAggregateFromServer(q, { t: sum('monto') });
+    return r.data().t || 0;
+  } catch (e) {
+    const s = await getDocs(q);
+    let t = 0; s.forEach(d => t += d.data().monto || 0);
+    return t;
+  }
+}
 async function interesesCobrados(cid) {
   const q = query(col(cid, 'movimientos'), where('tipo', 'in', ['pago_total', 'renovacion']));
   try {
@@ -462,8 +500,11 @@ async function abrirDet(id) {
 }
 async function abrirCob(id) {
   S.params = { id }; S.view = 'a_cob'; render(); window.scrollTo(0, 0);
-  const [pr, ms] = await Promise.all([cargarActivos(id), getDocs(query(col(id, 'movimientos'), orderBy('fecha', 'desc'), limit(15)))]);
-  S.params.pr = pr; S.params.mv = ms.docs.map(d => d.data());
+  const [pr, ms] = await Promise.all([cargarActivos(id), getDocs(query(col(id, 'movimientos'), orderBy('fecha', 'desc')))]);
+  const todos = ms.docs.map(d => d.data());
+  const sm = f => todos.filter(f).reduce((a, m) => a + (m.monto || 0), 0);
+  S.params.pr = pr; S.params.mv = todos.slice(0, 30);
+  S.params.tot = { recargas: sm(m => m.tipo === 'asignacion'), retiros: sm(m => m.tipo === 'retiro'), gastos: sm(m => m.tipo === 'gasto'), intereses: todos.filter(m => m.tipo === 'pago_total' || m.tipo === 'renovacion').reduce((a, m) => a + (m.interes || 0), 0) };
   if (S.view === 'a_cob' && S.params.id === id) render();
 }
 
@@ -509,7 +550,7 @@ const A = {
   },
   cob(t) { return abrirCob(t.dataset.id); },
   salir() { quitarAviso(); return signOut(auth); },
-  seguir() { ultimaAct = Date.now(); quitarAviso(); },
+  seguir() { marcarAct(); quitarAviso(); },
   activo(t) {
     if (S.stale) return toast('Espera un momento, estoy actualizando los datos', 'err');
     return run(t, async () => {
@@ -634,11 +675,16 @@ const F = {
       const tipo = ev && ev.submitter && ev.submitter.value ? ev.submitter.value : 'asignacion';
       const monto = num(f.monto.value), nota = f.nota.value.trim(), c = S.cobradores.find(x => x.id === f.dataset.id);
       if (monto <= 0) return toast('Escribe el monto', 'err');
-      if (tipo === 'retiro' && monto > c.caja) return toast('La caja solo tiene ' + money(c.caja), 'err');
-      await addDoc(col(c.id, 'movimientos'), { tipo, monto, efecto: tipo === 'asignacion' ? monto : -monto, fecha: Timestamp.now(), nota });
+      const antes = await cargarCaja(c.id);
+      if (tipo === 'retiro' && monto > antes) return toast('La caja solo tiene ' + money(antes), 'err');
+      const [act, previo] = await Promise.all([cargarActivos(c.id), sumaTipo(c.id, tipo)]);
+      const hoyD = hoy0(), efecto = tipo === 'asignacion' ? monto : -monto;
+      const det = { cajaAntes: antes, cajaDespues: antes + efecto, enPrestamos: act.reduce((a, x) => a + x.capital, 0), activos: act.length, mora: act.filter(x => x.vence < hoyD).length };
+      det[tipo === 'asignacion' ? 'recargasAcum' : 'retirosAcum'] = previo + monto;
+      await addDoc(col(c.id, 'movimientos'), { tipo, monto, efecto, fecha: Timestamp.now(), nota, ...det });
       c.caja = await cargarCaja(c.id);
       await abrirCob(c.id);
-      toast(tipo === 'asignacion' ? 'Dinero asignado' : 'Dinero retirado');
+      toast(tipo === 'asignacion' ? 'Caja recargada' : 'Dinero retirado de la caja');
     });
   },
   cobrador(f) {
@@ -918,8 +964,15 @@ try {
   const m = document.createElement('link'); m.rel = 'manifest'; m.href = URL.createObjectURL(new Blob([JSON.stringify(man)], { type: 'application/manifest+json' })); document.head.appendChild(m);
 } catch (_) {}
 
-const INACT_MIN = 5, AVISO_SEG = 30;
-let ultimaAct = Date.now();
+const INACT_MIN = 5, AVISO_SEG = 30, KACT = 'cartera_ultact';
+let ultimaAct = Date.now(), ultGuardado = 0;
+const guardarAct = forzar => {
+  const n = Date.now();
+  if (!forzar && n - ultGuardado < 5000) return;
+  ultGuardado = n;
+  try { localStorage.setItem(KACT, String(n)); } catch (_) {}
+};
+const marcarAct = () => { ultimaAct = Date.now(); guardarAct(); };
 function quitarAviso() { const o = $('#aviso'); if (o) o.remove(); }
 function mostrarAviso(seg) {
   let o = $('#aviso');
@@ -932,19 +985,25 @@ function mostrarAviso(seg) {
   }
   $('#avseg').textContent = seg + ' s';
 }
-['click', 'keydown', 'touchstart', 'scroll', 'input'].forEach(ev => document.addEventListener(ev, () => { if (!$('#aviso')) ultimaAct = Date.now(); }, { passive: true, capture: true }));
-setInterval(() => {
+['click', 'keydown', 'touchstart', 'scroll', 'input'].forEach(ev => document.addEventListener(ev, () => { if (!$('#aviso')) marcarAct(); }, { passive: true, capture: true }));
+function revisarInact() {
   if (!S.user) { quitarAviso(); ultimaAct = Date.now(); return; }
   const idle = Date.now() - ultimaAct, limite = INACT_MIN * 60000, tope = limite + AVISO_SEG * 1000;
   if (idle >= tope) { quitarAviso(); S.loginError = 'Tu sesión se cerró por inactividad.'; signOut(auth); }
   else if (idle >= limite) mostrarAviso(Math.ceil((tope - idle) / 1000));
-}, 1000);
+}
+setInterval(revisarInact, 1000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) revisarInact(); });
+window.addEventListener('pageshow', revisarInact);
 
 async function fallo(msg) { S.loginError = msg; await signOut(auth); }
 
 onAuthStateChanged(auth, async u => {
-  if (!u) { quitarAviso(); limpiarCache(); S.user = null; S.rol = null; S.stale = false; go('login'); return; }
-  S.user = u; ultimaAct = Date.now();
+  if (!u) { try { localStorage.removeItem(KACT); } catch (_) {} quitarAviso(); limpiarCache(); S.user = null; S.rol = null; S.stale = false; go('login'); return; }
+  let prev = 0;
+  try { prev = parseInt(localStorage.getItem(KACT) || '0', 10) || 0; } catch (_) {}
+  if (prev && Date.now() - prev > INACT_MIN * 60000 + AVISO_SEG * 1000) { S.loginError = 'Tu sesión se cerró por inactividad.'; await signOut(auth); return; }
+  S.user = u; ultimaAct = Date.now(); guardarAct(true);
   const esAdmin = (u.email || '').toLowerCase() === ADMIN_EMAIL;
   const vista = esAdmin ? 'a_resumen' : 'c_inicio';
   const c = leer(u.uid);
